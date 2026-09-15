@@ -1136,9 +1136,12 @@ async def remind(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ==================== ЗАПУСК ====================
 
 def run_bot():
+    import asyncio
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
     db.init_db()
     application = Application.builder().token(TOKEN).build()
-
+    
     # Базовые
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
