@@ -1,7 +1,7 @@
 import os
 
 TOKEN = os.environ.get("8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE")
-if not TOKEN or TOKEN == "8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE":
+if not TOKEN or TELEGRAM_TOKEN == "8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE":
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
     
 # Стоимости и награды
