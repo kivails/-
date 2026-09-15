@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: telegram-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: TELEGRAM_TOKEN
+        sync: false   # значение задаётся вручную в Dashboard, не в git
+      - key: PYTHON_VERSION
+        value: 3.11.9
