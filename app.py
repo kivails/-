@@ -1221,7 +1221,7 @@ def run_bot():
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
-        logger.info("🚀 Бот запущен!")
+    logger.info("🚀 Бот запущен!")
     application.run_polling(
         allowed_updates=Update.ALL_TYPES,
         stop_signals=None
