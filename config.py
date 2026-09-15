@@ -1,7 +1,7 @@
 import os
 
 TOKEN ="8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE"
-TELEGRAM_TOKEN == "8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE"
+TELEGRAM_TOKEN = "8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE"
 if not TOKEN:
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
     
