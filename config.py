@@ -1,6 +1,6 @@
 import os
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TOKEN = os.environ.get("8655220760:AAGTs6pnWRI9vqAG0ljhrftLDtmohZmXQotE")
 if not TOKEN:
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
 
