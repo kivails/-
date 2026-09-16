@@ -6,9 +6,11 @@ if not TOKEN:
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
 
 # ========== АДМИНЫ БОТА ==========
-ADMIN_IDS = [5024935475]
+# ВАЖНО: замените на свой реальный Telegram ID (узнать: @userinfobot)
+ADMIN_IDS = [5024935475,7608698950]
 
 # ========== ЭКОНОМИКА ==========
+START_BALANCE = 100
 DAILY_REWARD = 50
 DAILY_STREAK_BONUS = 10
 DAILY_MAX = 300
@@ -19,11 +21,10 @@ DICE_REWARD = 20
 SLOT_COST = 10
 SLOT_JACKPOT = 100
 SLOT_PAIR = 20
-START_BALANCE = 100
-WORK_COOLDOWN = 3600  # 1 час
+WORK_COOLDOWN = 3600
 WORK_MIN = 20
 WORK_MAX = 80
-ROB_COOLDOWN = 7200   # 2 часа
+ROB_COOLDOWN = 7200
 ROB_SUCCESS_CHANCE = 0.4
 ROB_FINE = 50
 
@@ -47,17 +48,22 @@ SHOP_ITEMS = {
     "pet_cat":      ("🐱 Кот",             800, "Питомец в профиле"),
     "pet_dog":      ("🐶 Пёс",             800, "Питомец в профиле"),
     "pet_dragon":   ("🐉 Дракон",          3000, "Редкий питомец"),
+    "heart_ring":   ("💖 Сердечко",        700, "Для романтичных"),
+    "star_badge":   ("🌟 Звезда",          900, "Светится в профиле"),
+    "rocket":       ("🚀 Ракета",          1200, "Быстрее /work"),
 }
 
 # ========== КВЕСТЫ ==========
 QUESTS = {
-    "play_5":     ("Сыграть 5 раз в игры",  5, 100),
-    "win_3":      ("Выиграть 3 раза",       3, 150),
-    "daily_3":    ("Забрать daily 3 раза",  3, 200),
-    "work_5":     ("Поработать 5 раз",      5, 250),
-    "marry":      ("Вступить в брак",       1, 300),
-    "shop_3":     ("Купить 3 предмета",     3, 200),
-    "rp_10":      ("Сделать 10 RP-действий",10, 150),
+    "play_5":     ("Сыграть 5 раз в игры",    5, 100),
+    "win_3":      ("Выиграть 3 раза",         3, 150),
+    "daily_3":    ("Забрать daily 3 раза",    3, 200),
+    "work_5":     ("Поработать 5 раз",        5, 250),
+    "marry":      ("Вступить в брак",         1, 300),
+    "shop_3":     ("Купить 3 предмета",       3, 200),
+    "rp_10":      ("Сделать 10 RP-действий", 10, 150),
+    "fish_10":    ("Поймать 10 рыб",         10, 250),
+    "duel_5":     ("Победить в 5 дуэлях",     5, 350),
 }
 
 # ========== АЧИВКИ ==========
@@ -71,6 +77,10 @@ ACHIEVEMENTS = {
     "daily_7":       ("🔥 Постоянный",      "Daily streak 7 дней"),
     "gamer":         ("🎮 Геймер",          "Сыграть 100 игр"),
     "collector":     ("📦 Коллекционер",    "Купить 5 предметов"),
+    "fisher":        ("🎣 Рыбак",           "Поймать 50 рыб"),
+    "duelist":       ("⚔️ Дуэлянт",         "Победить 20 раз"),
+    "lucky":         ("🍀 Счастливчик",     "Выиграть джекпот"),
+    "wanderer":      ("🌍 Путешественник",  "Использовать 20 разных команд"),
 }
 
 # ========== РЫБАЛКА ==========
@@ -82,6 +92,9 @@ FISH = [
     ("🐋 Кит", 200, 0.01),
     ("🦐 Креветка", 3, 0.20),
     ("🦑 Кальмар", 20, 0.04),
+    ("🐙 Осьминог", 35, 0.03),
+    ("🐢 Черепаха", 80, 0.02),
+    ("🐲 Дракон", 500, 0.005),
 ]
 
 # ========== РАБОТА ==========
@@ -89,45 +102,65 @@ WORK_JOBS = [
     "программистом", "дизайнером", "курьером", "учителем",
     "поваром", "таксистом", "врачом", "инженером",
     "стримером", "блогером", "грузчиком", "менеджером",
+    "артистом", "пилотом", "бариста", "фотографом",
 ]
 
 # ========== RP-ДЕЙСТВИЯ ==========
 RP_ACTIONS = {
-    "hug":      ("🤗", "обнимает",           "https://nekos.best/api/v2/hug"),
-    "kiss":     ("😘", "целует",             "https://nekos.best/api/v2/kiss"),
-    "slap":     ("👋", "шлёпает",            "https://nekos.best/api/v2/slap"),
-    "pat":      ("🥰", "гладит по голове",   "https://nekos.best/api/v2/pat"),
-    "kick":     ("🦵", "пинает",             "https://nekos.best/api/v2/kick"),
-    "punch":    ("👊", "бьёт",               "https://nekos.best/api/v2/punch"),
-    "bite":     ("😬", "кусает",             "https://nekos.best/api/v2/bite"),
-    "lick":     ("👅", "лижет",              "https://nekos.best/api/v2/lick"),
-    "cuddle":   ("🫂", "прижимается к",      "https://nekos.best/api/v2/cuddle"),
-    "poke":     ("👉", "тыкает",             "https://nekos.best/api/v2/poke"),
-    "wave":     ("👋", "машет",              "https://nekos.best/api/v2/wave"),
-    "highfive": ("🙌", "даёт пять",          "https://nekos.best/api/v2/highfive"),
-    "bonk":     ("🔨", "стукает",            "https://nekos.best/api/v2/bonk"),
-    "yeet":     ("🚀", "швыряет",            "https://nekos.best/api/v2/yeet"),
-    "blush":    ("😳", "краснеет рядом с",   "https://nekos.best/api/v2/blush"),
-    "smile":    ("😊", "улыбается",          "https://nekos.best/api/v2/smile"),
-    "happy":    ("😄", "радуется за",        "https://nekos.best/api/v2/happy"),
-    "wink":     ("😉", "подмигивает",        "https://nekos.best/api/v2/wink"),
-    "dance":    ("💃", "танцует с",          "https://nekos.best/api/v2/dance"),
-    "cry":      ("😭", "плачет рядом с",     "https://nekos.best/api/v2/cry"),
-    "pout":     ("😤", "дуется на",          "https://nekos.best/api/v2/pout"),
-    "feed":     ("🍰", "кормит",             "https://nekos.best/api/v2/feed"),
-    "baka":     ("😠", "обзывает дураком",   "https://nekos.best/api/v2/baka"),
-    "thumbsup": ("👍", "одобряет",           "https://nekos.best/api/v2/thumbsup"),
-    "shoot":    ("🔫", "стреляет в",         "https://nekos.best/api/v2/shoot"),
-    "stare":    ("👀", "смотрит на",         "https://nekos.best/api/v2/stare"),
-    "tickle":   ("🤣", "щекотет",            "https://nekos.best/api/v2/tickle"),
-    "handhold": ("🤝", "держит за руку",     "https://nekos.best/api/v2/handhold"),
-    "nom":      ("🍽", "кушает с",           "https://nekos.best/api/v2/nom"),
-    "nope":     ("🙅", "отказывает",         "https://nekos.best/api/v2/nope"),
-    "smug":     ("😏", "самодовольный",      "https://nekos.best/api/v2/smug"),
-    "think":    ("🤔", "думает о",           "https://nekos.best/api/v2/think"),
-    "sleepy":   ("😴", "сонный рядом с",     "https://nekos.best/api/v2/sleepy"),
-    "wag":      ("🐕", "виляет хвостом",     "https://nekos.best/api/v2/wag"),
-    "shrug":    ("🤷", "пожимает плечами",   "https://nekos.best/api/v2/shrug"),
+    # === Нежные ===
+    "hug":      ("🤗", "нежно обнимает",        "https://nekos.best/api/v2/hug"),
+    "cuddle":   ("🫂", "прижимается к",         "https://nekos.best/api/v2/cuddle"),
+    "kiss":     ("😘", "целует",                "https://nekos.best/api/v2/kiss"),
+    "kisscheek":("😚", "целует в щёчку",        "https://nekos.best/api/v2/kiss"),
+    "handhold": ("🤝", "держит за руку",        "https://nekos.best/api/v2/handhold"),
+    "pat":      ("🥰", "гладит по голове",      "https://nekos.best/api/v2/pat"),
+    "headpat":  ("💆", "треплет по волосам",    "https://nekos.best/api/v2/pat"),
+    "snuggle":  ("🛌", "уютно обнимает",        "https://nekos.best/api/v2/cuddle"),
+    "nuzzle":   ("🥺", "нежно трётся о",        "https://nekos.best/api/v2/cuddle"),
+    "tickle":   ("🤣", "щекочет",               "https://nekos.best/api/v2/tickle"),
+    "feed":     ("🍰", "кормит с ложечки",      "https://nekos.best/api/v2/feed"),
+    "nom":      ("🍽", "мило кушает с",         "https://nekos.best/api/v2/nom"),
+    "wave":     ("👋", "машет рукой",           "https://nekos.best/api/v2/wave"),
+    "highfive": ("🙌", "даёт пять",             "https://nekos.best/api/v2/highfive"),
+    "thumbsup": ("👍", "одобряет",              "https://nekos.best/api/v2/thumbsup"),
+
+    # === Игривые ===
+    "poke":     ("👉", "тыкает пальчиком",      "https://nekos.best/api/v2/poke"),
+    "bonk":     ("🔨", "стукает по голове",     "https://nekos.best/api/v2/bonk"),
+    "slap":     ("👋", "шлёпает",               "https://nekos.best/api/v2/slap"),
+    "punch":    ("👊", "бьёт",                  "https://nekos.best/api/v2/punch"),
+    "kick":     ("🦵", "пинает",                "https://nekos.best/api/v2/kick"),
+    "bite":     ("😬", "кусает",                "https://nekos.best/api/v2/bite"),
+    "lick":     ("👅", "лижет",                 "https://nekos.best/api/v2/lick"),
+    "yeet":     ("🚀", "швыряет в небо",        "https://nekos.best/api/v2/yeet"),
+    "baka":     ("😠", "называет дураком",      "https://nekos.best/api/v2/baka"),
+    "shoot":    ("🔫", "стреляет в",            "https://nekos.best/api/v2/shoot"),
+    "stare":    ("👀", "пристально смотрит на", "https://nekos.best/api/v2/stare"),
+
+    # === Эмоции ===
+    "blush":    ("😳", "краснеет рядом с",      "https://nekos.best/api/v2/blush"),
+    "smile":    ("😊", "улыбается",             "https://nekos.best/api/v2/smile"),
+    "happy":    ("😄", "радуется за",           "https://nekos.best/api/v2/happy"),
+    "wink":     ("😉", "подмигивает",           "https://nekos.best/api/v2/wink"),
+    "smug":     ("😏", "самодовольно смотрит",  "https://nekos.best/api/v2/smug"),
+    "think":    ("🤔", "задумчиво смотрит",     "https://nekos.best/api/v2/think"),
+    "sleepy":   ("😴", "засыпает рядом с",      "https://nekos.best/api/v2/sleepy"),
+    "cry":      ("😭", "плачет рядом с",        "https://nekos.best/api/v2/cry"),
+    "pout":     ("😤", "дуется на",             "https://nekos.best/api/v2/pout"),
+    "nope":     ("🙅", "отказывает",            "https://nekos.best/api/v2/nope"),
+    "shrug":    ("🤷", "пожимает плечами",      "https://nekos.best/api/v2/shrug"),
+    "dance":    ("💃", "танцует с",             "https://nekos.best/api/v2/dance"),
+
+    # === Питомцы ===
+    "wag":      ("🐕", "виляет хвостом перед",  "https://nekos.best/api/v2/wag"),
+    "nya":      ("🐱", "мяукает для",           "https://nekos.best/api/v2/nya"),
+    "woof":     ("🐶", "гавкает на",            "https://nekos.best/api/v2/woof"),
+
+    # === Романтика ===
+    "love":     ("❤️", "признаётся в любви",    "https://nekos.best/api/v2/kiss"),
+    "protect":  ("🛡", "защищает",              "https://nekos.best/api/v2/hug"),
+    "comfort":  ("🫂", "утешает",               "https://nekos.best/api/v2/cuddle"),
+    "propose":  ("💐", "дарит букет",           "https://nekos.best/api/v2/kiss"),
 }
 
 # ========== 8BALL ==========
@@ -151,6 +184,8 @@ QUOTES = [
     ("Сложнее всего начать действовать, всё остальное зависит только от упорства.", "Амелия Эрхарт"),
     ("Если хочешь идти быстро — иди один. Если хочешь идти далеко — иди вместе.", "Африканская пословица"),
     ("Знание — сила.", "Фрэнсис Бэкон"),
+    ("Улыбка — это кривая, которая выпрямляет всё.", "Филлис Диллер"),
+    ("Счастье — это когда тебя понимают.", "Из фильма"),
 ]
 
 # ========== ИДЕИ ==========
@@ -165,4 +200,6 @@ IDEAS = [
     "Завести дневник благодарности",
     "Сходить на прогулку без телефона",
     "Сделать уборку в шкафу",
+    "Написать письмо себе в будущее",
+    "Попробовать новый рецепт кофе",
 ]
