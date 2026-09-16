@@ -5,6 +5,7 @@ from datetime import datetime
 DB_PATH = "bot.db"
 lock = threading.Lock()
 
+
 def init_db():
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -81,6 +82,7 @@ def init_db():
         """)
         conn.commit()
 
+
 def get_user(user_id: int, username: str = None, first_name: str = None):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -102,6 +104,7 @@ def get_user(user_id: int, username: str = None, first_name: str = None):
             conn.commit()
         return row
 
+
 def update_user(user_id: int, **kwargs):
     if not kwargs:
         return
@@ -112,8 +115,10 @@ def update_user(user_id: int, **kwargs):
         cur.execute(f"UPDATE users SET {fields} WHERE user_id=?", values)
         conn.commit()
 
+
 def get_balance(user_id: int) -> int:
     return get_user(user_id)[3]
+
 
 def add_balance(user_id: int, amount: int, reason: str = "manual"):
     get_user(user_id)
@@ -126,6 +131,7 @@ def add_balance(user_id: int, amount: int, reason: str = "manual"):
         )
         conn.commit()
 
+
 def top_users(limit=10):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -136,6 +142,7 @@ def top_users(limit=10):
             LIMIT ?
         """, (limit,))
         return cur.fetchall()
+
 
 def get_chat(chat_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
@@ -149,6 +156,7 @@ def get_chat(chat_id: int):
             row = cur.fetchone()
         return row
 
+
 def update_chat(chat_id: int, **kwargs):
     get_chat(chat_id)
     fields = ", ".join(f"{k}=?" for k in kwargs)
@@ -157,6 +165,7 @@ def update_chat(chat_id: int, **kwargs):
         cur = conn.cursor()
         cur.execute(f"UPDATE chats SET {fields} WHERE chat_id=?", values)
         conn.commit()
+
 
 # ===== БРАК =====
 def create_marriage_proposal(proposer_id: int, target_id: int):
@@ -168,6 +177,7 @@ def create_marriage_proposal(proposer_id: int, target_id: int):
         )
         conn.commit()
 
+
 def get_marriage_proposal(proposer_id: int, target_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -177,6 +187,7 @@ def get_marriage_proposal(proposer_id: int, target_id: int):
         )
         return cur.fetchone()
 
+
 def delete_marriage_proposal(proposer_id: int, target_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -185,6 +196,7 @@ def delete_marriage_proposal(proposer_id: int, target_id: int):
             (proposer_id, target_id)
         )
         conn.commit()
+
 
 # ===== КЛАНЫ =====
 def create_clan(name: str, owner_id: int, description: str = ""):
@@ -200,11 +212,13 @@ def create_clan(name: str, owner_id: int, description: str = ""):
         except sqlite3.IntegrityError:
             return None
 
+
 def get_clan_by_name(name: str):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM clans WHERE name=?", (name,))
         return cur.fetchone()
+
 
 def get_clan(clan_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
@@ -212,11 +226,13 @@ def get_clan(clan_id: int):
         cur.execute("SELECT * FROM clans WHERE clan_id=?", (clan_id,))
         return cur.fetchone()
 
+
 def get_all_clans(limit=20):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM clans ORDER BY balance DESC LIMIT ?", (limit,))
         return cur.fetchall()
+
 
 def get_clan_members(clan_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
@@ -227,11 +243,13 @@ def get_clan_members(clan_id: int):
         )
         return cur.fetchall()
 
+
 def add_clan_balance(clan_id: int, amount: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("UPDATE clans SET balance = balance + ? WHERE clan_id=?", (amount, clan_id))
         conn.commit()
+
 
 def delete_clan(clan_id: int):
     with lock, sqlite3.connect(DB_PATH) as conn:
@@ -240,43 +258,14 @@ def delete_clan(clan_id: int):
         cur.execute("DELETE FROM clans WHERE clan_id=?", (clan_id,))
         conn.commit()
 
-# ===== ОПРОСЫ =====
-def create_poll(chat_id: int, question: str, options: list, creator_id: int):
-    import json
-    with lock, sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO polls(chat_id, question, options, votes, creator_id, created_at) VALUES(?, ?, ?, ?, ?, ?)",
-            (chat_id, question, json.dumps(options), '{}', creator_id, datetime.now().isoformat())
-        )
-        conn.commit()
-        return cur.lastrowid
-
-def get_poll(poll_id: int):
-    with lock, sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM polls WHERE poll_id=?", (poll_id,))
-        return cur.fetchone()
-
-def update_poll_votes(poll_id: int, votes_json: str):
-    with lock, sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("UPDATE polls SET votes=? WHERE poll_id=?", (votes_json, poll_id))
-        conn.commit()
-
-def close_poll(poll_id: int):
-    with lock, sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("UPDATE polls SET is_closed=1 WHERE poll_id=?", (poll_id,))
-        conn.commit()
 
 # ===== АЧИВКИ =====
 def get_achievements(user_id: int):
     data = get_user(user_id)
     return data[16].split(",") if data[16] else []
 
+
 def add_achievement(user_id: int, ach_id: str) -> bool:
-    """Вернёт True, если ачивка была добавлена впервые"""
     cur = get_achievements(user_id)
     if ach_id in cur:
         return False
