@@ -264,7 +264,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⭐ /rep — репутация\n"
         f"🕐 /msk — время МСК\n"
         f"💱 /currency — курсы валют\n"
-        f"ℹ️ /about — о боте"
     )
     await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
