@@ -2737,7 +2737,7 @@ def run_bot():
     # ВРЕМЯ / ВАЛЮТЫ
     application.add_handler(CommandHandler("msk", moscow_time))
     application.add_handler(CommandHandler("moscow", moscow_time))
-    application.add_handler(CommandHandler("время", moscow_time))
+    application.add_handler(CommandHandler("time", moscow_time))
     application.add_handler(CommandHandler("currency", currency))
     application.add_handler(CommandHandler("crypto", crypto))
 
