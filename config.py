@@ -5,9 +5,8 @@ if not TOKEN:
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
 
 # ========== АДМИНЫ ==========
-# ID админов + юзернеймы (без @)
 ADMIN_IDS = [5024935475]
-ADMIN_USERNAMES = ["kvails", "notuwife", "kvails"]
+ADMIN_USERNAMES = ["kvails", "notuwife"]
 
 # ========== ЭКОНОМИКА ==========
 START_BALANCE = 100
@@ -27,9 +26,9 @@ WORK_MAX = 80
 ROB_COOLDOWN = 7200
 ROB_SUCCESS_CHANCE = 0.4
 ROB_FINE = 50
-REFERRAL_BONUS = 0.5  # 💎 Кристаллы
-CUSTOM_RP_COST = 2000  # за свою RP-команду
-ANNOUNCEMENT_COST = 100  # за объявление
+REFERRAL_BONUS = 0.5
+CUSTOM_RP_COST = 2000
+ANNOUNCEMENT_COST = 100
 
 # ========== КАЗИНО ==========
 ROULETTE_MIN_BET = 10
@@ -108,7 +107,6 @@ FISH = [
     ("🐲 Дракон", 500, 0.005),
 ]
 
-# ========== РАБОТА ==========
 WORK_JOBS = [
     "программистом", "дизайнером", "курьером", "учителем",
     "поваром", "таксистом", "врачом", "инженером",
@@ -116,45 +114,81 @@ WORK_JOBS = [
     "артистом", "пилотом", "бариста", "фотографом",
 ]
 
-# ========== RP (англ + рус) ==========
-# формат: ключ: (эмодзи, текст, url, русский_алиас)
+# ========== RP (англ. команды + русские алиасы без слэша) ==========
+# формат: ключ: (эмодзи, текст, url, [русские слова])
 RP_ACTIONS = {
-    "hug":      ("🤗", "нежно обнимает",        "https://nekos.best/api/v2/hug",      "обнять"),
-    "cuddle":   ("🫂", "прижимается к",         "https://nekos.best/api/v2/cuddle",   "прижаться"),
-    "kiss":     ("😘", "целует",                "https://nekos.best/api/v2/kiss",     "поцеловать"),
-    "handhold": ("🤝", "держит за руку",        "https://nekos.best/api/v2/handhold", "заруку"),
-    "pat":      ("🥰", "гладит по голове",      "https://nekos.best/api/v2/pat",      "погладить"),
-    "tickle":   ("🤣", "щекочет",               "https://nekos.best/api/v2/tickle",   "щекотать"),
-    "feed":     ("🍰", "кормит с ложечки",      "https://nekos.best/api/v2/feed",     "покормить"),
-    "wave":     ("👋", "машет рукой",           "https://nekos.best/api/v2/wave",     "помахать"),
-    "highfive": ("🙌", "даёт пять",             "https://nekos.best/api/v2/highfive", "пять"),
-    "poke":     ("👉", "тыкает пальчиком",      "https://nekos.best/api/v2/poke",     "тыкнуть"),
-    "bonk":     ("🔨", "стукает по голове",     "https://nekos.best/api/v2/bonk",     "стукнуть"),
-    "slap":     ("👋", "шлёпает",               "https://nekos.best/api/v2/slap",     "шлепнуть"),
-    "punch":    ("👊", "бьёт",                  "https://nekos.best/api/v2/punch",    "ударить"),
-    "kick":     ("🦵", "пинает",                "https://nekos.best/api/v2/kick",     "пнуть"),
-    "bite":     ("😬", "кусает",                "https://nekos.best/api/v2/bite",     "укусить"),
-    "lick":     ("👅", "лижет",                 "https://nekos.best/api/v2/lick",     "лизнуть"),
-    "yeet":     ("🚀", "швыряет в небо",        "https://nekos.best/api/v2/yeet",     "швырнуть"),
-    "baka":     ("😠", "называет дураком",      "https://nekos.best/api/v2/baka",     "дурак"),
-    "stare":    ("👀", "пристально смотрит на", "https://nekos.best/api/v2/stare",    "смотреть"),
-    "blush":    ("😳", "краснеет рядом с",      "https://nekos.best/api/v2/blush",    "смутиться"),
-    "smile":    ("😊", "улыбается",             "https://nekos.best/api/v2/smile",    "улыбнуться"),
-    "happy":    ("😄", "радуется за",           "https://nekos.best/api/v2/happy",    "радоваться"),
-    "wink":     ("😉", "подмигивает",           "https://nekos.best/api/v2/wink",     "подмигнуть"),
-    "smug":     ("😏", "самодовольно смотрит",  "https://nekos.best/api/v2/smug",     "самодовольно"),
-    "think":    ("🤔", "задумчиво смотрит",     "https://nekos.best/api/v2/think",    "подумать"),
-    "sleepy":   ("😴", "засыпает рядом с",      "https://nekos.best/api/v2/sleepy",   "уснуть"),
-    "cry":      ("😭", "плачет рядом с",        "https://nekos.best/api/v2/cry",      "плакать"),
-    "pout":     ("😤", "дуется на",             "https://nekos.best/api/v2/pout",     "дуться"),
-    "dance":    ("💃", "танцует с",             "https://nekos.best/api/v2/dance",    "танцевать"),
-    "wag":      ("🐕", "виляет хвостом перед",  "https://nekos.best/api/v2/wag",      "вилять"),
-    "nya":      ("🐱", "мяукает для",           "https://nekos.best/api/v2/nya",      "мяукать"),
-    "woof":     ("🐶", "гавкает на",            "https://nekos.best/api/v2/woof",     "гавкать"),
-    "love":     ("❤️", "признаётся в любви",    "https://nekos.best/api/v2/kiss",     "любить"),
-    "protect":  ("🛡", "защищает",              "https://nekos.best/api/v2/hug",      "защитить"),
-    "comfort":  ("🫂", "утешает",               "https://nekos.best/api/v2/cuddle",   "утешить"),
-    "propose":  ("💐", "дарит букет",           "https://nekos.best/api/v2/kiss",     "букет"),
+    "hug":      ("🤗", "нежно обнимает",        "https://nekos.best/api/v2/hug",
+                 ["обнять", "обнимаю", "обними", "обнимашки"]),
+    "cuddle":   ("🫂", "прижимается к",         "https://nekos.best/api/v2/cuddle",
+                 ["прижаться", "прижмись", "обнимашки"]),
+    "kiss":     ("😘", "целует",                "https://nekos.best/api/v2/kiss",
+                 ["поцеловать", "целую", "поцелуй", "чмок"]),
+    "handhold": ("🤝", "держит за руку",        "https://nekos.best/api/v2/handhold",
+                 ["заруку", "за_руку"]),
+    "pat":      ("🥰", "гладит по голове",      "https://nekos.best/api/v2/pat",
+                 ["погладить", "гладить", "потрепать"]),
+    "tickle":   ("🤣", "щекочет",               "https://nekos.best/api/v2/tickle",
+                 ["щекотать", "щекотка"]),
+    "feed":     ("🍰", "кормит с ложечки",      "https://nekos.best/api/v2/feed",
+                 ["покормить", "кормить"]),
+    "wave":     ("👋", "машет рукой",           "https://nekos.best/api/v2/wave",
+                 ["помахать", "махать"]),
+    "highfive": ("🙌", "даёт пять",             "https://nekos.best/api/v2/highfive",
+                 ["пять", "дайпять"]),
+    "poke":     ("👉", "тыкает пальчиком",      "https://nekos.best/api/v2/poke",
+                 ["тыкнуть", "ткнуть", "тык"]),
+    "bonk":     ("🔨", "стукает по голове",     "https://nekos.best/api/v2/bonk",
+                 ["стукнуть", "бонк"]),
+    "slap":     ("👋", "шлёпает",               "https://nekos.best/api/v2/slap",
+                 ["шлепнуть", "шлёпнуть", "шлепок"]),
+    "punch":    ("👊", "бьёт",                  "https://nekos.best/api/v2/punch",
+                 ["ударить", "бить"]),
+    "kick":     ("🦵", "пинает",                "https://nekos.best/api/v2/kick",
+                 ["пнуть", "пинать"]),
+    "bite":     ("😬", "кусает",                "https://nekos.best/api/v2/bite",
+                 ["укусить", "кусать"]),
+    "lick":     ("👅", "лижет",                 "https://nekos.best/api/v2/lick",
+                 ["лизнуть", "лизать"]),
+    "yeet":     ("🚀", "швыряет в небо",        "https://nekos.best/api/v2/yeet",
+                 ["швырнуть", "кинуть"]),
+    "baka":     ("😠", "называет дураком",      "https://nekos.best/api/v2/baka",
+                 ["дурак", "бака"]),
+    "stare":    ("👀", "пристально смотрит на", "https://nekos.best/api/v2/stare",
+                 ["смотреть", "пялиться"]),
+    "blush":    ("😳", "краснеет рядом с",      "https://nekos.best/api/v2/blush",
+                 ["смутиться", "краснеть"]),
+    "smile":    ("😊", "улыбается",             "https://nekos.best/api/v2/smile",
+                 ["улыбнуться", "улыбка"]),
+    "happy":    ("😄", "радуется за",           "https://nekos.best/api/v2/happy",
+                 ["радоваться", "рад"]),
+    "wink":     ("😉", "подмигивает",           "https://nekos.best/api/v2/wink",
+                 ["подмигнуть"]),
+    "smug":     ("😏", "самодовольно смотрит",  "https://nekos.best/api/v2/smug",
+                 ["самодовольно"]),
+    "think":    ("🤔", "задумчиво смотрит",     "https://nekos.best/api/v2/think",
+                 ["подумать", "задуматься"]),
+    "sleepy":   ("😴", "засыпает рядом с",      "https://nekos.best/api/v2/sleepy",
+                 ["уснуть", "сонный"]),
+    "cry":      ("😭", "плачет рядом с",        "https://nekos.best/api/v2/cry",
+                 ["плакать", "поплакать"]),
+    "pout":     ("😤", "дуется на",             "https://nekos.best/api/v2/pout",
+                 ["дуться", "обидеться"]),
+    "dance":    ("💃", "танцует с",             "https://nekos.best/api/v2/dance",
+                 ["танцевать", "станцевать"]),
+    "wag":      ("🐕", "виляет хвостом перед",  "https://nekos.best/api/v2/wag",
+                 ["вилять", "хвост"]),
+    "nya":      ("🐱", "мяукает для",           "https://nekos.best/api/v2/nya",
+                 ["мяукать", "мяу"]),
+    "woof":     ("🐶", "гавкает на",            "https://nekos.best/api/v2/woof",
+                 ["гавкать", "гав"]),
+    "love":     ("❤️", "признаётся в любви",    "https://nekos.best/api/v2/kiss",
+                 ["любить", "люблю"]),
+    "protect":  ("🛡", "защищает",              "https://nekos.best/api/v2/hug",
+                 ["защитить", "защита"]),
+    "comfort":  ("🫂", "утешает",               "https://nekos.best/api/v2/cuddle",
+                 ["утешить", "успокоить"]),
+    "propose":  ("💐", "дарит букет",           "https://nekos.best/api/v2/kiss",
+                 ["букет", "подарить"]),
 }
 
 BALL_ANSWERS = [
