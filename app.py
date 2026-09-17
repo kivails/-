@@ -62,10 +62,10 @@ QUIZ_QUESTIONS = [
     ("Столица Франции?", "париж"),
     ("Сколько будет 7 * 8?", "56"),
     ("Какой газ мы вдыхаем?", "кислород"),
-    ("Самое большое животное на Земле?", "синий кит"),
+    ("Самое большое животное?", "синий кит"),
     ("Сколько цветов в радуге?", "7"),
     ("Кто написал «Война и мир»?", "толстой"),
-    ("Самая длинная река в мире?", "нил"),
+    ("Самая длинная река?", "нил"),
     ("Сколько сторон у шестиугольника?", "6"),
     ("Год начала Второй мировой?", "1939"),
     ("Формула воды?", "h2o"),
@@ -76,14 +76,13 @@ QUIZ_QUESTIONS = [
     ("Кто написал «Евгений Онегин»?", "пушкин"),
     ("Сколько континентов?", "6"),
     ("Язык в Бразилии?", "португальский"),
-    ("Сколько будет 100 / 4?", "25"),
     ("Крупнейшая планета?", "юпитер"),
 ]
 
 JOKES = [
     "— Что сказал программист, когда закончил работу? — Ещё один commit, и я спать.",
     "Программист — это машина для превращения кофе в код.",
-    "— Почему программисты путают Хэллоуин и Рождество? — Потому что Oct 31 == Dec 25.",
+    "— Почему программисты путают Хэллоуин и Рождество? — Oct 31 == Dec 25.",
     "Есть 10 типов людей: те, кто понимает двоичную систему, и те, кто нет.",
     "99 маленьких багов в коде... Уберёшь один — их 127.",
 ]
@@ -91,38 +90,25 @@ JOKES = [
 LINE = "━━━━━━━━━━━━━━━━━━━━━━━"
 
 
-# ==================== ОФОРМЛЕНИЕ ====================
+# ==================== УТИЛИТЫ ====================
 
-def frame(title: str, emoji: str = "✨") -> str:
+def frame(title, emoji="✨"):
     return f"╭──────────────────────────╮\n   {emoji}  {title}  {emoji}\n╰──────────────────────────╯"
 
 
-def divider() -> str:
+def divider():
     return "━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 
-def mention(user) -> str:
+def mention(user):
     return f"[{user.first_name}](tg://user?id={user.id})"
 
 
-def mention_by_id(user_id: int, name: str = "Пользователь") -> str:
+def mention_by_id(user_id, name="Пользователь"):
     return f"[{name}](tg://user?id={user_id})"
 
 
-def plain_mention(user) -> str:
-    """Просто имя со ссылкой, без подчёркиваний и звёзд — для безопасной отправки"""
-    return f"[{user.first_name}](tg://user?id={user.id})"
-
-
-def user_display(user_id: int, username: str = None, first_name: str = None) -> str:
-    if username:
-        return f"@{username}"
-    if first_name:
-        return f"[{first_name}](tg://user?id={user_id})"
-    return f"[ID {user_id}](tg://user?id={user_id})"
-
-
-async def fetch_anime_gif(url: str):
+async def fetch_anime_gif(url):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=4)) as resp:
@@ -134,7 +120,7 @@ async def fetch_anime_gif(url: str):
     return None
 
 
-def is_bot_admin(user_id: int, username: str = None) -> bool:
+def is_bot_admin(user_id, username=None):
     if user_id in ADMIN_IDS:
         return True
     if username and username.lower() in [u.lower() for u in ADMIN_USERNAMES]:
@@ -142,7 +128,7 @@ def is_bot_admin(user_id: int, username: str = None) -> bool:
     return False
 
 
-async def is_chat_admin(update, context) -> bool:
+async def is_chat_admin(update, context):
     try:
         member = await context.bot.get_chat_member(
             update.effective_chat.id, update.effective_user.id
@@ -153,36 +139,27 @@ async def is_chat_admin(update, context) -> bool:
 
 
 async def resolve_target(update, context):
-    """Возвращает (user_object_or_None, display_string_or_None).
-    Работает: reply → @username (в группе) → @username как строка (в ЛС)."""
-    # 1. Reply
+    """(user_obj_or_None, display_str_or_None)"""
     if update.message.reply_to_message:
         u = update.message.reply_to_message.from_user
-        return u, plain_mention(u)
-
-    # 2. Аргумент @username / username
+        return u, mention(u)
     args = context.args or []
     if not args:
         return None, None
-
     raw = args[0]
     if not raw.startswith("@"):
         return None, None
     username = raw.lstrip("@")
-
-    # В группе — пробуем получить user
     if update.effective_chat.type != "private":
         try:
-            member = await context.bot.get_chat_member(update.effective_chat.id, username)
-            return member.user, plain_mention(member.user)
+            m = await context.bot.get_chat_member(update.effective_chat.id, username)
+            return m.user, mention(m.user)
         except Exception:
             pass
-
-    # Не удалось — возвращаем строку
     return None, f"@{username}"
 
 
-def check_quest(user_id: int, quest_key: str, increment: int = 1):
+def check_quest(user_id, quest_key, increment=1):
     user = db.get_user(user_id)
     progress = json.loads(user["quest_progress"] or '{}')
     progress[quest_key] = progress.get(quest_key, 0) + increment
@@ -194,48 +171,38 @@ def check_quest(user_id: int, quest_key: str, increment: int = 1):
     return False, 0
 
 
-async def grant_achievement(update, user_id: int, ach_id: str):
+async def grant_achievement(update, user_id, ach_id):
     if ach_id not in ACHIEVEMENTS:
         return
     if db.add_achievement(user_id, ach_id):
         name, desc = ACHIEVEMENTS[ach_id]
         try:
-            await update.message.reply_text(
-                f"🏆 Новая ачивка!\n{name}\n_{desc}_",
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await update.message.reply_text(f"🏆 Новая ачивка!\n{name}\n{desc}")
         except Exception:
-            try:
-                await update.message.reply_text(f"🏆 Новая ачивка: {name}")
-            except Exception:
-                pass
+            pass
 
 
-async def check_banned(update: Update) -> bool:
+async def check_banned(update):
     u = update.effective_user
     db.get_user(u.id, u.username, u.first_name)
     data = db.get_user(u.id)
-    if data["is_banned"]:
+    if data["is_banned"] or data["is_frozen"]:
         return True
     return False
 
 
-# ==================== START / HELP ====================
+# ==================== КОМАНДЫ ====================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update, context):
     u = update.effective_user
     db.get_user(u.id, u.username, u.first_name)
 
-    # Реферальная обработка
     if context.args and context.args[0].startswith("ref_"):
         try:
             ref_id = int(context.args[0].replace("ref_", ""))
             if ref_id != u.id and db.add_referral(ref_id, u.id):
                 try:
-                    await context.bot.send_message(
-                        ref_id,
-                        f"🎉 Новый реферал! +{REFERRAL_BONUS} 💎"
-                    )
+                    await context.bot.send_message(ref_id, f"🎉 Новый реферал! +{REFERRAL_BONUS} 💎")
                 except Exception:
                     pass
         except (ValueError, IndexError):
@@ -246,33 +213,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         f"🌟 Привет, {u.first_name}! 🌟\n"
         f"{divider()}\n"
-        "Я — многофункциональный бот с играми, экономикой,\n"
-        "RP-командами, браком, кланами и модерацией.\n\n"
-        "📖 Все команды: /help\n"
-        "🎮 Игры: /games\n"
-        "💰 Экономика: /economy\n"
-        "🎰 Казино: /casino\n"
-        "💞 RP: /rp\n"
-        "💍 Отношения: /lovehelp\n"
-        "🎁 Кристаллы (рефералы): /referral\n"
-        "👑 Кланы: /clans\n"
+        "Я — многофункциональный бот:\n"
+        "🎮 игры, 💰 экономика, 💞 RP, 💍 брак, 👑 кланы\n\n"
+        "📖 /help — все команды\n"
+        "💞 /rp — RP-команды\n"
+        "🎁 /referral — кристаллы\n"
         f"{divider()}\n"
-        "💡 _Добавь меня в группу!_"
+        "💡 Добавь меня в группу!"
     )
-    try:
-        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-    except Exception:
-        await update.message.reply_text(text)
+    await update.message.reply_text(text)
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
+async def help_command(update, context):
+    await update.message.reply_text(
         "📖 СПРАВКА\n"
         f"{divider()}\n"
         "🎮 /games — игры\n"
         "💰 /economy — экономика\n"
         "🎰 /casino — казино\n"
-        "💞 /rp — RP-действия\n"
+        "💞 /rp — RP\n"
         "💍 /lovehelp — отношения\n"
         "🎁 /referral — кристаллы\n"
         "👑 /clans — кланы\n"
@@ -287,131 +246,122 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🕐 /msk — время МСК\n"
         "💱 /currency — валюты"
     )
-    await update.message.reply_text(text)
 
 
 async def games_help(update, context):
-    text = ("🎮 ИГРЫ\n"
-            f"{divider()}\n"
-            "🎲 /roll — кубик\n"
-            "🪙 /coin — монетка\n"
-            "🎯 /dice — кости\n"
-            "🏀 /basketball — баскетбол\n"
-            "⚽ /football — футбол\n"
-            "🎳 /bowling — боулинг\n"
-            "🎯 /darts — дартс\n"
-            "🎰 /slot — автомат\n"
-            "🔢 /guess — число\n"
-            "🛑 /stopguess — стоп\n"
-            "⚔️ /duel @юзер — дуэль\n"
-            "❓ /quiz — викторина\n"
-            "🎱 /8ball — шар\n"
-            "🎲 /random от до")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🎮 ИГРЫ\n"
+        f"{divider()}\n"
+        "🎲 /roll /coin /dice\n"
+        "🏀 /basketball /football\n"
+        "🎳 /bowling /darts\n"
+        "🎰 /slot\n"
+        "🔢 /guess /stopguess\n"
+        "⚔️ /duel\n"
+        "❓ /quiz /trivia\n"
+        "🎱 /8ball\n"
+        "🎲 /random от до"
+    )
 
 
 async def economy_help(update, context):
-    text = ("💰 ЭКОНОМИКА\n"
-            f"{divider()}\n"
-            "💵 /balance [@юзер]\n"
-            "🎁 /daily — бонус\n"
-            "💼 /work — работа\n"
-            "🎣 /fish — рыбалка\n"
-            "🥷 /rob @юзер\n"
-            "🏆 /top — топ-10\n"
-            "💸 /pay @юзер сумма\n"
-            "🛒 /shop — магазин\n"
-            "🛍 /buy ID\n"
-            "🎒 /inventory\n"
-            "📜 /quests\n"
-            "🎁 /referral — кристаллы")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "💰 ЭКОНОМИКА\n"
+        f"{divider()}\n"
+        "💵 /balance\n"
+        "🎁 /daily\n"
+        "💼 /work\n"
+        "🎣 /fish\n"
+        "🥷 /rob\n"
+        "🏆 /top\n"
+        "💸 /pay @юзер сумма\n"
+        "🛒 /shop /buy ID\n"
+        "🎒 /inventory\n"
+        "📜 /quests\n"
+        "🎁 /referral"
+    )
 
 
 async def casino_help(update, context):
-    text = ("🎰 КАЗИНО\n"
-            f"{divider()}\n"
-            "🎰 /slot\n"
-            "🪙 /bet_flip орёл|решка сумма\n"
-            "🎡 /roulette цвет|число сумма\n"
-            "🃏 /blackjack сумма\n"
-            "🎲 /bet_dice сумма")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🎰 КАЗИНО\n"
+        f"{divider()}\n"
+        "🎰 /slot\n"
+        "🪙 /bet_flip орёл|решка сумма\n"
+        "🎡 /roulette цвет|число сумма\n"
+        "🃏 /blackjack сумма\n"
+        "🎲 /bet_dice сумма"
+    )
 
 
 async def rp_help(update, context):
     lines = [f"💞 RP-ДЕЙСТВИЯ\n{divider()}"]
     for key, data in RP_ACTIONS.items():
-        emoji, action, _, ru = data
-        lines.append(f"{emoji} /{key} или /{ru} — {action}")
+        emoji, action, _, aliases = data
+        ru = ", ".join(aliases[:2]) if aliases else ""
+        lines.append(f"{emoji} /{key} или {ru}")
     lines.append("")
-    lines.append("💡 Работает: ответ на сообщение / @username")
+    lines.append("💡 Можно писать БЕЗ слэша:")
+    lines.append("   просто напиши: обнять @юзер")
+    lines.append("   или ответом на сообщение")
     await update.message.reply_text("\n".join(lines))
 
 
 async def love_help(update, context):
-    text = ("💍 ОТНОШЕНИЯ\n"
-            f"{divider()}\n"
-            "💍 /marry @юзер\n"
-            "✅ /accept\n"
-            "❌ /decline\n"
-            "💔 /divorce\n"
-            "💞 /couple — показать пару\n"
-            "💕 /love @юзер — совместимость\n"
-            "🚢 /ship — рандом шип\n"
-            "🎁 /marriage_gift — прокачать уровень брака")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "💍 ОТНОШЕНИЯ\n"
+        f"{divider()}\n"
+        "💍 /marry @юзер — предложение\n"
+        "💔 /divorce\n"
+        "💞 /couple\n"
+        "🎁 /marriage_gift сумма\n"
+        "💕 /love @юзер\n"
+        "🚢 /ship — рандомный шип"
+    )
 
 
 async def mod_help(update, context):
-    text = ("🛡 МОДЕРАЦИЯ\n"
-            f"{divider()}\n"
-            "🔇 /mute [10m]\n"
-            "🔊 /unmute\n"
-            "👢 /kick\n"
-            "🚫 /ban\n"
-            "✅ /unban\n"
-            "⚠️ /warn\n"
-            "🔹 /unwarn\n"
-            "📋 /warns\n"
-            "🧹 /purge N\n"
-            "📜 /rules\n"
-            "✏️ /setrules текст")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🛡 МОДЕРАЦИЯ\n"
+        f"{divider()}\n"
+        "🔇 /mute /unmute\n"
+        "👢 /kick /ban /unban\n"
+        "⚠️ /warn /unwarn /warns\n"
+        "🧹 /purge N\n"
+        "📜 /rules /setrules"
+    )
 
 
 async def utils_help(update, context):
-    text = ("🔧 УТИЛИТЫ\n"
-            f"{divider()}\n"
-            "🌤 /weather город\n"
-            "🌐 /tr текст\n"
-            "⏰ /remind 10m текст\n"
-            "⏲ /timer 60\n"
-            "🆔 /id\n"
-            "🏓 /ping\n"
-            "🔐 /password 16\n"
-            "📱 /qr текст\n"
-            "🎨 /color\n"
-            "💱 /currency 100 USD RUB\n"
-            "💎 /crypto BTC\n"
-            "🕐 /msk — время МСК")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🔧 УТИЛИТЫ\n"
+        f"{divider()}\n"
+        "🌤 /weather город\n"
+        "🌐 /tr текст\n"
+        "⏰ /remind 10m текст\n"
+        "⏲ /timer 60\n"
+        "🆔 /id /ping\n"
+        "🔐 /password\n"
+        "📱 /qr\n"
+        "💱 /currency\n"
+        "💎 /crypto\n"
+        "🕐 /msk"
+    )
 
 
 async def fun_help(update, context):
-    text = ("🎲 РАЗВЛЕЧЕНИЯ\n"
-            f"{divider()}\n"
-            "🎱 /8ball вопрос\n"
-            "💕 /love @юзер\n"
-            "🚢 /ship\n"
-            "🎭 /quote\n"
-            "🖼 /avatar @юзер\n"
-            "😄 /joke\n"
-            "🧠 /fact\n"
-            "💡 /idea\n"
-            "🎲 /choice a | b | c\n"
-            "🔮 /predict")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🎲 РАЗВЛЕЧЕНИЯ\n"
+        f"{divider()}\n"
+        "🎱 /8ball\n"
+        "💕 /love\n"
+        "🚢 /ship\n"
+        "🎭 /quote\n"
+        "🖼 /avatar\n"
+        "😄 /joke /fact /idea\n"
+        "🎲 /choice\n"
+        "🔮 /predict"
+    )
 
 
 async def notes_help(update, context):
@@ -419,25 +369,27 @@ async def notes_help(update, context):
 
 
 async def clans_help(update, context):
-    text = ("👑 КЛАНЫ\n"
-            f"{divider()}\n"
-            "🏰 /create_clan Имя\n"
-            "📋 /clans — список\n"
-            "👥 /clan_info Имя\n"
-            "➕ /clan_join Имя\n"
-            "➖ /clan_leave\n"
-            "💰 /clan_deposit сумма\n"
-            "🏆 /clan_top\n"
-            "🗑 /clan_delete")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "👑 КЛАНЫ\n"
+        f"{divider()}\n"
+        "🏰 /create_clan Имя\n"
+        "📋 /clans — список\n"
+        "👥 /clan_info Имя\n"
+        "➕ /clan_join Имя\n"
+        "➖ /clan_leave\n"
+        "💰 /clan_deposit сумма\n"
+        "🏆 /clan_top\n"
+        "🗑 /clan_delete"
+    )
 
 
 async def about(update, context):
-    text = (f"ℹ️ О БОТЕ\n{divider()}\n"
-            "🤖 Версия: 7.0\n"
-            f"💞 RP: {len(RP_ACTIONS)}\n"
-            f"🏆 Ачивок: {len(ACHIEVEMENTS)}")
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        f"ℹ️ О БОТЕ\n{divider()}\n"
+        "🤖 Версия: 7.0\n"
+        f"💞 RP: {len(RP_ACTIONS)}\n"
+        f"🏆 Ачивок: {len(ACHIEVEMENTS)}"
+    )
 
 
 async def ping(update, context):
@@ -457,29 +409,23 @@ async def id_command(update, context):
     await update.message.reply_text(text)
 
 
-# ==================== RP (главное!) ====================
+# ==================== RP ====================
 
-async def send_rp(update, context, action_key: str):
-    """Отправляет RP-действие. Работает: reply / @username / без цели."""
+async def send_rp(update, context, action_key):
     emoji, action, api_url, _ = RP_ACTIONS[action_key]
     actor = update.effective_user
     db.get_user(actor.id, actor.username, actor.first_name)
 
-    # Определяем цель
     target_user, target_display = await resolve_target(update, context)
-
-    # Загружаем гифку
     gif = await fetch_anime_gif(api_url)
 
-    # Формируем caption
     if target_display is None:
-        caption = f"{emoji} {plain_mention(actor)} {action}"
+        caption = f"{emoji} {mention(actor)} {action}"
     elif target_user and target_user.id == actor.id:
-        caption = f"{emoji} {plain_mention(actor)} {action} себя 😅"
+        caption = f"{emoji} {mention(actor)} {action} себя 😅"
     else:
-        caption = f"{emoji} {plain_mention(actor)} {action} {target_display}"
+        caption = f"{emoji} {mention(actor)} {action} {target_display}"
 
-    # Прокачка брака, если это партнёр
     if target_user:
         actor_data = db.get_user(actor.id)
         if actor_data["married_to"] == target_user.id:
@@ -488,15 +434,11 @@ async def send_rp(update, context, action_key: str):
 
     try:
         if gif:
-            await update.message.reply_animation(
-                animation=gif,
-                caption=caption,
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await update.message.reply_animation(animation=gif, caption=caption, parse_mode=ParseMode.MARKDOWN)
         else:
             await update.message.reply_text(caption, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
-        logger.warning(f"RP send error: {e}")
+        logger.warning(f"RP send: {e}")
         try:
             await update.message.reply_text(caption)
         except Exception:
@@ -505,28 +447,30 @@ async def send_rp(update, context, action_key: str):
     await check_quest(actor.id, "rp_10")
 
 
-def make_rp_handler(action_key: str):
+def make_rp_handler(action_key):
     async def handler(update, context):
         await send_rp(update, context, action_key)
     return handler
 
 
-async def custom_rp_dispatch(update, context, command):
-    """Своя RP-команда из БД"""
-    rp = db.get_custom_rp(command)
-    if not rp:
+async def ru_rp_handler(update, context):
+    """Русские слова без слэша: 'обнять @юзер'"""
+    if not update.message or not update.message.text:
         return
-    _, owner_id, cmd, emoji, action = rp
-    actor = update.effective_user
-    target_user, target_display = await resolve_target(update, context)
-    if target_display is None:
-        caption = f"{emoji} {plain_mention(actor)} {action}"
-    else:
-        caption = f"{emoji} {plain_mention(actor)} {action} {target_display}"
-    try:
-        await update.message.reply_text(caption, parse_mode=ParseMode.MARKDOWN)
-    except Exception:
-        await update.message.reply_text(caption)
+    text = update.message.text.strip()
+    if text.startswith("/"):
+        return
+    words = text.split()
+    if not words:
+        return
+    first = words[0].lower().strip("!,.?")
+    for action_key, data in RP_ACTIONS.items():
+        aliases = data[3] if isinstance(data[3], list) else ([data[3]] if data[3] else [])
+        aliases = [a.lower() for a in aliases]
+        if first in aliases:
+            context.args = words[1:]
+            await send_rp(update, context, action_key)
+            return
 
 
 # ==================== ВРЕМЯ / ВАЛЮТЫ ====================
@@ -534,35 +478,29 @@ async def custom_rp_dispatch(update, context, command):
 async def moscow_time(update, context):
     try:
         async with aiohttp.ClientSession() as session:
-            url = "https://worldtimeapi.org/api/timezone/Europe/Moscow"
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=6)) as resp:
+            async with session.get("https://worldtimeapi.org/api/timezone/Europe/Moscow",
+                                   timeout=aiohttp.ClientTimeout(total=6)) as resp:
                 data = await resp.json()
                 dt_str = data["datetime"][:19].replace("T", " ")
-                await update.message.reply_text(
-                    f"🕐 МОСКВА (МСК)\n{divider()}\n📅 {dt_str}\n🌍 UTC{data['utc_offset']}"
-                )
+                await update.message.reply_text(f"🕐 МОСКВА (МСК)\n{divider()}\n📅 {dt_str}\n🌍 UTC{data['utc_offset']}")
     except Exception:
         msk = datetime.now(timezone(timedelta(hours=3)))
         await update.message.reply_text(f"🕐 МСК: {msk.strftime('%d.%m.%Y %H:%M:%S')}")
 
 
 async def currency(update, context):
-    """Конвертер валют: фиат + крипта"""
     if not context.args:
         await update.message.reply_text(
             "💱 ВАЛЮТЫ\n"
             f"{divider()}\n"
             "`/currency 100 USD RUB`\n"
-            "`/currency 5000 RUB USD`\n"
             "`/currency USD` — курс\n"
             "`/crypto BTC` — крипта\n\n"
             "Доступно: RUB, USD, EUR, UAH, BYN, KZT, AED, GBP\n"
             "Крипта: BTC, ETH, TON, SOL, BNB, XRP"
         )
         return
-
     args = context.args
-    # /currency 100 USD RUB
     if len(args) >= 3 and args[0].replace('.', '').isdigit():
         try:
             amount = float(args[0])
@@ -577,15 +515,13 @@ async def currency(update, context):
                         return
                     rate = data["rates"].get(to_cur)
                     if not rate:
-                        await update.message.reply_text("❌ Не нашёл целевую валюту.")
+                        await update.message.reply_text("❌ Нет целевой валюты.")
                         return
-                    result = amount * rate
-                    await update.message.reply_text(f"💱 {amount:g} {from_cur} = {result:.2f} {to_cur}")
+                    await update.message.reply_text(f"💱 {amount:g} {from_cur} = {amount*rate:.2f} {to_cur}")
         except Exception as e:
             await update.message.reply_text(f"Ошибка: {e}")
         return
 
-    # /currency XXX — курс
     code = args[0].upper()
     crypto_map = {"BTC": "bitcoin", "TON": "the-open-network", "ETH": "ethereum",
                   "SOL": "solana", "BNB": "binancecoin", "XRP": "ripple"}
@@ -597,9 +533,7 @@ async def currency(update, context):
                     data = await resp.json()
                     info = data[crypto_map[code]]
                     await update.message.reply_text(
-                        f"💎 {code}\n{divider()}\n"
-                        f"🇺🇸 ${info['usd']:,.2f}\n"
-                        f"🇷🇺 {info['rub']:,.2f} ₽"
+                        f"💎 {code}\n{divider()}\n🇺🇸 ${info['usd']:,.2f}\n🇷🇺 {info['rub']:,.2f} ₽"
                     )
         except Exception as e:
             await update.message.reply_text(f"Ошибка: {e}")
@@ -613,19 +547,18 @@ async def currency(update, context):
                 if data.get("result") != "success":
                     await update.message.reply_text("❌ Не нашёл валюту.")
                     return
-                rub = data["rates"].get("RUB")
-                usd = data["rates"].get("USD")
-                eur = data["rates"].get("EUR")
-                uah = data["rates"].get("UAH")
-                byn = data["rates"].get("BYN")
-                aed = data["rates"].get("AED")
+                rates = data["rates"]
                 await update.message.reply_text(
                     f"💱 КУРС {code}\n{divider()}\n"
-                    f"🇷🇺 RUB: {rub}\n🇺🇸 USD: {usd}\n🇪🇺 EUR: {eur}\n"
-                    f"🇺🇦 UAH: {uah}\n🇧🇾 BYN: {byn}\n🇦🇪 AED: {aed}"
+                    f"🇷🇺 RUB: {rates.get('RUB')}\n"
+                    f"🇺🇸 USD: {rates.get('USD')}\n"
+                    f"🇪🇺 EUR: {rates.get('EUR')}\n"
+                    f"🇺🇦 UAH: {rates.get('UAH')}\n"
+                    f"🇧🇾 BYN: {rates.get('BYN')}\n"
+                    f"🇦🇪 AED: {rates.get('AED')}"
                 )
     except Exception:
-        await update.message.reply_text("Ошибка получения курса.")
+        await update.message.reply_text("Ошибка.")
 
 
 async def crypto(update, context):
@@ -651,7 +584,7 @@ async def referral(update, context):
         f"👥 Приглашено: {count}\n"
         f"💎 Кристаллов: {crystals:.1f}\n"
         f"{divider()}\n"
-        f"_+{REFERRAL_BONUS} 💎 за каждого нового_"
+        f"+{REFERRAL_BONUS} 💎 за каждого нового"
     )
 
 
@@ -736,21 +669,18 @@ async def top_messages_week(update, context):
 
 
 async def chat_stats(update, context):
-    """Статистика чата"""
     chat_id = update.effective_chat.id
     users = db.top_messages(chat_id, 100)
-    total_msgs = sum(m or 0 for _, _, _, m in users)
-    text = (
+    total = sum(m or 0 for _, _, _, m in users)
+    await update.message.reply_text(
         f"📊 СТАТИСТИКА ЧАТА\n{divider()}\n"
-        f"💬 Всего сообщений: {total_msgs}\n"
+        f"💬 Всего сообщений: {total}\n"
         f"👥 Активных участников: {len(users)}\n"
         f"🆔 ID чата: {chat_id}"
     )
-    await update.message.reply_text(text)
 
 
 async def all_chats_stats(update, context):
-    """Все чаты, где есть бот — только для админов бота"""
     if not is_bot_admin(update.effective_user.id, update.effective_user.username):
         await update.message.reply_text("❌ Только для админов.")
         return
@@ -778,13 +708,13 @@ async def roll(update, context):
     else:
         result = random.randint(1, max_num)
         await update.message.reply_dice(emoji="🎲")
-    await update.message.reply_text(f"🎲 {plain_mention(update.effective_user)} выбросил {result}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"🎲 {mention(update.effective_user)} выбросил {result}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def coin(update, context):
     msg = await update.message.reply_dice(emoji="🎯")
     result = "🦅 Орёл" if msg.dice.value in (1, 2, 3) else "🪙 Решка"
-    await update.message.reply_text(f"🪙 {plain_mention(update.effective_user)}: {result}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"🪙 {mention(update.effective_user)}: {result}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def dice_game(update, context):
@@ -793,44 +723,46 @@ async def dice_game(update, context):
     m1 = await update.message.reply_dice(emoji="🎲")
     m2 = await update.message.reply_dice(emoji="🎲")
     p, b = m1.dice.value, m2.dice.value
-    db.update_user(uid, stats_played=(db.get_user(uid)["stats_played"] or 0) + 1)
+    d = db.get_user(uid)
+    db.update_user(uid, stats_played=(d["stats_played"] or 0) + 1)
     if p > b:
         db.add_balance(uid, DICE_REWARD)
-        db.update_user(uid, stats_won=(db.get_user(uid)["stats_won"] or 0) + 1)
+        d = db.get_user(uid)
+        db.update_user(uid, stats_won=(d["stats_won"] or 0) + 1)
         res = f"🏆 Победа! +{DICE_REWARD}"
     elif p < b:
         res = "🤖 Бот победил"
     else:
         res = "🤝 Ничья"
-    await update.message.reply_text(f"🎯 {plain_mention(update.effective_user)}: {p}\n🤖 Бот: {b}\n{res}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"🎯 {mention(update.effective_user)}: {p}\n🤖 Бот: {b}\n{res}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def basketball(update, context):
     msg = await update.message.reply_dice(emoji="🏀")
     s = msg.dice.value
     txt = "🏀 Точный бросок!" if s >= 4 else ("🏀 Почти!" if s >= 2 else "🏀 Мимо...")
-    await update.message.reply_text(f"{plain_mention(update.effective_user)} бросает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"{mention(update.effective_user)} бросает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def football(update, context):
     msg = await update.message.reply_dice(emoji="⚽")
     s = msg.dice.value
     txt = "⚽ ГООООЛ!" if s == 5 else ("⚽ Гол!" if s == 4 else ("⚽ Вратарь!" if s == 3 else "⚽ Мимо..."))
-    await update.message.reply_text(f"{plain_mention(update.effective_user)} бьёт!\n{txt}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"{mention(update.effective_user)} бьёт!\n{txt}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def bowling(update, context):
     msg = await update.message.reply_dice(emoji="🎳")
     s = msg.dice.value
     txt = "🎳 СТРАЙК!" if s == 6 else f"🎳 Сбито {s} кеглей"
-    await update.message.reply_text(f"{plain_mention(update.effective_user)} бросает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"{mention(update.effective_user)} бросает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def darts(update, context):
     msg = await update.message.reply_dice(emoji="🎯")
     s = msg.dice.value
     txt = "🎯 В яблочко!" if s == 6 else f"🎯 Очки: {s * 10}"
-    await update.message.reply_text(f"{plain_mention(update.effective_user)} кидает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"{mention(update.effective_user)} кидает!\n{txt}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def slot(update, context):
@@ -858,7 +790,7 @@ async def slot(update, context):
     db.update_user(uid, stats_played=(d["stats_played"] or 0) + 1)
     if v >= 40:
         db.update_user(uid, stats_won=(d["stats_won"] or 0) + 1)
-    await update.message.reply_text(f"🎰 {plain_mention(update.effective_user)}\n{res}\n💰 {db.get_balance(uid)}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"🎰 {mention(update.effective_user)}\n{res}\n💰 {db.get_balance(uid)}", parse_mode=ParseMode.MARKDOWN)
     await check_quest(uid, "casino_10")
 
 
@@ -896,30 +828,24 @@ async def handle_guess(update, context):
     else:
         uid = update.effective_user.id
         db.add_balance(uid, GUESS_REWARD)
-        await update.message.reply_text(f"🎉 {plain_mention(update.effective_user)}! {g['number']}\n+{GUESS_REWARD}", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"🎉 {mention(update.effective_user)}! {g['number']}\n+{GUESS_REWARD}", parse_mode=ParseMode.MARKDOWN)
         del guess_games[chat_id]
 
 
 async def duel(update, context):
     chat_id = update.effective_chat.id
     target_user, target_display = await resolve_target(update, context)
-    if not target_user and not target_display:
-        await update.message.reply_text("Использование: /duel @юзер (или ответом)")
+    if not target_user:
+        await update.message.reply_text("Использование: /duel @юзер")
         return
-    if target_user and target_user.id == update.effective_user.id:
+    if target_user.id == update.effective_user.id:
         await update.message.reply_text("Нельзя себя!")
         return
     challenger = update.effective_user
-    if target_user:
-        opp_id = target_user.id
-        opp_name = target_user.first_name
-    else:
-        await update.message.reply_text("В личке дуэль только с известным юзером.")
-        return
     duel_games[chat_id] = {
-        'challenger': challenger.id, 'opponent': opp_id,
+        'challenger': challenger.id, 'opponent': target_user.id,
         'choice1': None, 'choice2': None,
-        'names': {challenger.id: challenger.first_name, opp_id: opp_name}
+        'names': {challenger.id: challenger.first_name, target_user.id: target_user.first_name}
     }
     kb = [[
         InlineKeyboardButton("✊", callback_data="duel_rock"),
@@ -927,7 +853,7 @@ async def duel(update, context):
         InlineKeyboardButton("✋", callback_data="duel_paper"),
     ]]
     await update.message.reply_text(
-        f"⚔️ {plain_mention(challenger)} vs {target_display}",
+        f"⚔️ {mention(challenger)} vs {target_display}",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=InlineKeyboardMarkup(kb)
     )
@@ -1003,7 +929,7 @@ async def handle_quiz(update, context):
         uid = update.effective_user.id
         db.add_balance(uid, r)
         del quiz_games[chat_id]
-        await update.message.reply_text(f"✅ Верно, {plain_mention(update.effective_user)}! +{r}", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"✅ Верно, {mention(update.effective_user)}! +{r}", parse_mode=ParseMode.MARKDOWN)
 
 
 async def ball8(update, context):
@@ -1018,7 +944,8 @@ async def random_number(update, context):
     try:
         if len(context.args) >= 2:
             a, b = int(context.args[0]), int(context.args[1])
-            if a > b: a, b = b, a
+            if a > b:
+                a, b = b, a
         else:
             a, b = 1, 100
     except ValueError:
@@ -1040,7 +967,7 @@ async def bet_flip(update, context):
         return
     uid = update.effective_user.id
     if amount < COINFLIP_MIN_BET or db.get_balance(uid) < amount:
-        await update.message.reply_text("❌ Мало монет или мин. ставка не соблюдена.")
+        await update.message.reply_text("❌ Мало монет.")
         return
     res = random.choice(["орёл", "решка"])
     db.add_balance(uid, -amount)
@@ -1074,9 +1001,12 @@ async def roulette(update, context):
     color = "зелёное" if r == 0 else ("красное" if r in red else "чёрное")
     db.add_balance(uid, -amount)
     win = 0
-    if ch in ("красное", "красный") and color == "красное": win = amount * 2
-    elif ch in ("чёрное", "черное", "чёрный", "черный") and color == "чёрное": win = amount * 2
-    elif ch.isdigit() and int(ch) == r: win = amount * 36
+    if ch in ("красное", "красный") and color == "красное":
+        win = amount * 2
+    elif ch in ("чёрное", "черное", "чёрный", "черный") and color == "чёрное":
+        win = amount * 2
+    elif ch.isdigit() and int(ch) == r:
+        win = amount * 36
     if win:
         db.add_balance(uid, win)
         await update.message.reply_text(f"🎡 {r} ({color})\n🎉 +{win}")
@@ -1168,10 +1098,14 @@ async def blackjack_callback(update, context):
             g['dealer'].append(g['deck'].pop())
             dv = calc(g['dealer'])
         if dv > 21 or p > dv:
-            win = amount * 2; db.add_balance(uid, win); msg = f"🏆 +{win}"
-            d = db.get_user(uid); db.update_user(uid, stats_won=(d["stats_won"] or 0) + 1)
+            win = amount * 2
+            db.add_balance(uid, win)
+            msg = f"🏆 +{win}"
+            d = db.get_user(uid)
+            db.update_user(uid, stats_won=(d["stats_won"] or 0) + 1)
         elif p == dv:
-            db.add_balance(uid, amount); msg = "🤝 Ничья."
+            db.add_balance(uid, amount)
+            msg = "🤝 Ничья."
         else:
             msg = f"😢 -{amount}"
         await q.edit_message_text(f"🎴 Ваши: {' '.join(g['player'])} = {p}\n🎴 Дилер: {' '.join(g['dealer'])} = {dv}\n{msg}")
@@ -1215,7 +1149,7 @@ async def balance(update, context):
     b = db.get_balance(target.id)
     c = db.get_crystals(target.id)
     await update.message.reply_text(
-        f"💰 {plain_mention(target)}\nБаланс: {b}\n💎 Кристаллы: {c:.1f}",
+        f"💰 {mention(target)}\nБаланс: {b}\n💎 Кристаллы: {c:.1f}",
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -1301,7 +1235,7 @@ async def fish(update, context):
 async def rob(update, context):
     target_user, target_display = await resolve_target(update, context)
     if not target_user:
-        await update.message.reply_text("Укажи @юзер или ответь.")
+        await update.message.reply_text("Укажи @юзер.")
         return
     if target_user.id == update.effective_user.id:
         await update.message.reply_text("Себя нельзя!")
@@ -1338,12 +1272,10 @@ async def rob(update, context):
 async def pay(update, context):
     target = None
     amount = None
-    # Reply
     if update.message.reply_to_message:
         target = update.message.reply_to_message.from_user
         if context.args and context.args[0].isdigit():
             amount = int(context.args[0])
-    # @username + сумма
     elif context.args and len(context.args) >= 2:
         name = context.args[0].lstrip("@")
         if context.args[1].isdigit():
@@ -1372,7 +1304,7 @@ async def pay(update, context):
     db.add_balance(uid, -amount)
     db.add_balance(target.id, amount)
     await update.message.reply_text(
-        f"💸 {plain_mention(update.effective_user)} → {plain_mention(target)}: {amount}",
+        f"💸 {mention(update.effective_user)} → {mention(target)}: {amount}",
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -1380,12 +1312,9 @@ async def pay(update, context):
 async def shop(update, context):
     lines = [f"🛒 МАГАЗИН\n{divider()}"]
     for iid, (name, price, desc) in SHOP_ITEMS.items():
-        lines.append(f"{name}\n   {price} 💰 | _{desc}_\n   ID: {iid}")
-    lines.append(f"\nКупить: /buy ID")
-    try:
-        await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
-    except Exception:
-        await update.message.reply_text("\n".join(lines))
+        lines.append(f"{name}\n   {price} 💰 | {desc}\n   ID: {iid}")
+    lines.append("\nКупить: /buy ID")
+    await update.message.reply_text("\n".join(lines))
 
 
 async def buy(update, context):
@@ -1450,11 +1379,8 @@ async def achievements_cmd(update, context):
     lines = [f"🏆 АЧИВКИ {u.first_name} ({len(got)}/{len(ACHIEVEMENTS)})\n{divider()}"]
     for aid, (name, desc) in ACHIEVEMENTS.items():
         mark = "✅" if aid in got else "🔒"
-        lines.append(f"{mark} {name}\n   _{desc}_")
-    try:
-        await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
-    except Exception:
-        await update.message.reply_text("\n".join(lines))
+        lines.append(f"{mark} {name}\n   {desc}")
+    await update.message.reply_text("\n".join(lines))
 
 
 async def rep(update, context):
@@ -1469,7 +1395,7 @@ async def rep(update, context):
     data = db.get_user(target_user.id)
     nr = (data["reputation"] or 0) + 1
     db.update_user(target_user.id, reputation=nr)
-    await update.message.reply_text(f"⭐ {plain_mention(update.effective_user)} → {target_display}\nРепа: {nr}", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"⭐ {mention(update.effective_user)} → {target_display}\nРепа: {nr}", parse_mode=ParseMode.MARKDOWN)
 
 
 # ==================== ПРОФИЛЬ ====================
@@ -1502,8 +1428,7 @@ async def profile(update, context):
     uname = f"@{data['username']}" if data["username"] else "—"
 
     text = (
-        f"👤 {u.first_name}{title}\n"
-        f"{divider()}\n"
+        f"👤 {u.first_name}{title}\n{divider()}\n"
         f"📛 {uname}\n"
         f"🆔 {u.id}\n"
         f"📅 Зашёл: {reg}\n"
@@ -1571,7 +1496,7 @@ async def add_rp(update, context):
     db.get_user(uid, update.effective_user.username, update.effective_user.first_name)
     inv = (db.get_user(uid)["inventory"] or "").split(",")
     if "vip" not in inv:
-        await update.message.reply_text(f"❌ Только для VIP. Купи /buy vip")
+        await update.message.reply_text("❌ Только для VIP. /buy vip")
         return
     if len(context.args) < 3:
         await update.message.reply_text(
@@ -1588,18 +1513,17 @@ async def add_rp(update, context):
         return
     if db.add_custom_rp(uid, command, emoji, action):
         db.add_balance(uid, -CUSTOM_RP_COST)
-        await update.message.reply_text(f"✅ Создана команда /{command}!\n-{CUSTOM_RP_COST} 💰")
+        await update.message.reply_text(f"✅ Команда /{command} создана!\n-{CUSTOM_RP_COST} 💰")
     else:
         await update.message.reply_text("❌ Команда уже занята.")
 
 
 async def my_rp(update, context):
-    uid = update.effective_user.id
-    rps = db.get_my_custom_rp(uid)
+    rps = db.get_my_custom_rp(update.effective_user.id)
     if not rps:
-        await update.message.reply_text("У тебя нет своих RP-команд. /add_rp")
+        await update.message.reply_text("У тебя нет своих RP. /add_rp")
         return
-    lines = [f"💞 Твои RP-команды:"]
+    lines = ["💞 Твои RP-команды:"]
     for cmd, emoji, action in rps:
         lines.append(f"{emoji} /{cmd} — {action}")
     await update.message.reply_text("\n".join(lines))
@@ -1631,7 +1555,7 @@ async def marry(update, context):
         InlineKeyboardButton("❌ Отклонить", callback_data=f"marry_no:{actor.id}"),
     ]]
     await update.message.reply_text(
-        f"💍 Предложение!\n{divider()}\n{plain_mention(actor)} → {target_display}\n_{target_user.first_name}, твой ход..._",
+        f"💍 Предложение!\n{divider()}\n{mention(actor)} → {target_display}\n{target_user.first_name}, твой ход...",
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=InlineKeyboardMarkup(kb)
     )
@@ -1660,10 +1584,7 @@ async def marry_callback(update, context):
         db.update_user(pid, married_to=target.id)
         db.update_user(target.id, married_to=pid)
         db.delete_marriage_proposal(pid, target.id)
-        await q.edit_message_text(
-            f"💍💞 Свадьба!\n{divider()}\n{plain_mention(target)}\n🎉 Поздравляем!",
-            parse_mode=ParseMode.MARKDOWN
-        )
+        await q.edit_message_text(f"💍💞 Свадьба!\n{divider()}\n{mention(target)}\n🎉 Поздравляем!", parse_mode=ParseMode.MARKDOWN)
         db.add_achievement(pid, "married")
         db.add_achievement(target.id, "married")
     else:
@@ -1695,7 +1616,7 @@ async def couple(update, context):
         m = await context.bot.get_chat_member(update.effective_chat.id, user["married_to"])
         partner = m.user
         await update.message.reply_text(
-            f"💞 {plain_mention(update.effective_user)} + {plain_mention(partner)}\n"
+            f"💞 {mention(update.effective_user)} + {mention(partner)}\n"
             f"💍 Уровень брака: {user['marriage_level'] or 1}\n"
             f"💫 Опыт: {user['marriage_xp'] or 0}/{100 * (user['marriage_level'] or 1)}",
             parse_mode=ParseMode.MARKDOWN
@@ -1705,7 +1626,6 @@ async def couple(update, context):
 
 
 async def marriage_gift(update, context):
-    """Подарок партнёру — прокачивает уровень брака"""
     uid = update.effective_user.id
     user = db.get_user(uid)
     if not user["married_to"]:
@@ -1713,9 +1633,9 @@ async def marriage_gift(update, context):
         return
     if not context.args or not context.args[0].isdigit():
         await update.message.reply_text(
-            "Использование: /marriage_gift сумма\n"
-            f"Пример: /marriage_gift 100\n"
-            f"За каждые 50 монет +1 уровень опыта"
+            "/marriage_gift сумма\n"
+            "Пример: /marriage_gift 100\n"
+            "За каждые 50 монет +1 XP"
         )
         return
     amount = int(context.args[0])
@@ -1726,9 +1646,7 @@ async def marriage_gift(update, context):
     db.add_balance(uid, -amount)
     new_lvl = db.add_marriage_xp(uid, xp)
     db.add_marriage_xp(user["married_to"], xp)
-    await update.message.reply_text(
-        f"🎁 Подарок на {amount}!\n💍 Уровень брака: {new_lvl}\n+{xp} XP"
-    )
+    await update.message.reply_text(f"🎁 Подарок на {amount}!\n💍 Уровень брака: {new_lvl}\n+{xp} XP")
     if new_lvl >= 5:
         await grant_achievement(update, uid, "love_lvl5")
     await check_quest(uid, "love_5")
@@ -1750,26 +1668,27 @@ async def love_calc(update, context):
     elif pct >= 30: verdict = "💔 Сложно..."
     else: verdict = "🖤 Не судьба"
     await update.message.reply_text(
-        f"💕 Совместимость\n{divider()}\n{plain_mention(actor)} + {target_display}\n{pct}% — {verdict}",
+        f"💕 Совместимость\n{divider()}\n{mention(actor)} + {target_display}\n{pct}% — {verdict}",
         parse_mode=ParseMode.MARKDOWN
     )
 
 
 async def ship(update, context):
-    """Рандомный шип двух участников"""
-    # Если ответили — шип с reply
     if update.message.reply_to_message:
         a = update.effective_user
         b = update.message.reply_to_message.from_user
     else:
-        # Рандом из тех, кто писал в чат
         users = db.top_messages(update.effective_chat.id, 20)
         if len(users) < 2:
-            await update.message.reply_text("Мало участников для шипа.")
+            await update.message.reply_text("Мало участников.")
             return
         pair = random.sample(users, 2)
-        a = type("U", (), {"id": pair[0][0], "first_name": pair[0][2] or f"ID {pair[0][0]}"})()
-        b = type("U", (), {"id": pair[1][0], "first_name": pair[1][2] or f"ID {pair[1][0]}"})()
+        class FakeUser:
+            def __init__(self, uid, name):
+                self.id = uid
+                self.first_name = name
+        a = FakeUser(pair[0][0], pair[0][2] or f"ID {pair[0][0]}")
+        b = FakeUser(pair[1][0], pair[1][2] or f"ID {pair[1][0]}")
 
     pair = tuple(sorted([a.id, b.id]))
     random.seed(pair)
@@ -1778,7 +1697,7 @@ async def ship(update, context):
     name = (a.first_name[:len(a.first_name)//2] + b.first_name[len(b.first_name)//2:])
     await update.message.reply_text(
         f"🚢 Рандомный шип!\n{divider()}\n"
-        f"💑 {plain_mention(a)} + {plain_mention(b)}\n"
+        f"💑 {mention(a)} + {mention(b)}\n"
         f"💕 Название: {name}\n"
         f"📊 {pct}%\n{'💖' * (pct // 10)}",
         parse_mode=ParseMode.MARKDOWN
@@ -1847,7 +1766,7 @@ async def remind(update, context):
         await update.message.reply_text("Неверный формат.")
         return
     chat_id = update.effective_chat.id
-    um = plain_mention(update.effective_user)
+    um = mention(update.effective_user)
     async def task():
         await asyncio.sleep(sec)
         try:
@@ -1965,9 +1884,7 @@ async def avatar(update, context):
 # ==================== МОДЕРАЦИЯ ====================
 
 async def mute(update, context):
-    if not await is_chat_admin(update, context):
-        return
-    if not update.message.reply_to_message:
+    if not await is_chat_admin(update, context) or not update.message.reply_to_message:
         return
     target = update.message.reply_to_message.from_user
     duration = 60
@@ -1987,7 +1904,7 @@ async def mute(update, context):
             permissions=ChatPermissions(can_send_messages=False),
             until_date=until
         )
-        await update.message.reply_text(f"🔇 {plain_mention(target)} на {duration // 60} мин.", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"🔇 {mention(target)} на {duration // 60} мин.", parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         await update.message.reply_text(f"Ошибка: {e}")
 
@@ -2002,7 +1919,7 @@ async def unmute(update, context):
             permissions=ChatPermissions(can_send_messages=True, can_send_media_messages=True,
                                         can_send_other_messages=True, can_add_web_page_previews=True)
         )
-        await update.message.reply_text(f"🔊 {plain_mention(target)} размучен.", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"🔊 {mention(target)} размучен.", parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         await update.message.reply_text(f"Ошибка: {e}")
 
@@ -2014,7 +1931,7 @@ async def kick(update, context):
     try:
         await context.bot.ban_chat_member(update.effective_chat.id, target.id)
         await context.bot.unban_chat_member(update.effective_chat.id, target.id)
-        await update.message.reply_text(f"👢 {plain_mention(target)} кикнут.", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"👢 {mention(target)} кикнут.", parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         await update.message.reply_text(f"Ошибка: {e}")
 
@@ -2025,7 +1942,7 @@ async def ban(update, context):
     target = update.message.reply_to_message.from_user
     try:
         await context.bot.ban_chat_member(update.effective_chat.id, target.id)
-        await update.message.reply_text(f"🚫 {plain_mention(target)} забанен.", parse_mode=ParseMode.MARKDOWN)
+        await update.message.reply_text(f"🚫 {mention(target)} забанен.", parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         await update.message.reply_text(f"Ошибка: {e}")
 
@@ -2055,7 +1972,7 @@ async def warn(update, context):
     cur = db.get_user(target.id)["warns"]
     db.update_user(target.id, warns=cur + 1)
     new = cur + 1
-    await update.message.reply_text(f"⚠️ {plain_mention(target)} — {new}/3", parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(f"⚠️ {mention(target)} — {new}/3", parse_mode=ParseMode.MARKDOWN)
     if new >= 3:
         try:
             await context.bot.ban_chat_member(update.effective_chat.id, target.id)
@@ -2323,23 +2240,18 @@ async def del_note(update, context):
 # ==================== ОБЪЯВЛЕНИЯ ====================
 
 async def announcement(update, context):
-    """Объявление за 100 кристаллов — отправится во все чаты"""
     uid = update.effective_user.id
     db.get_user(uid, update.effective_user.username, update.effective_user.first_name)
-
     if not context.args:
         await update.message.reply_text(
             f"📢 ОБЪЯВЛЕНИЕ\n{divider()}\n"
             f"Цена: {ANNOUNCEMENT_COST} 💎\n\n"
-            f"Использование: /announcement текст\n"
-            f"Объявление увидят все чаты бота."
+            f"/announcement текст"
         )
         return
-
     if db.get_crystals(uid) < ANNOUNCEMENT_COST:
         await update.message.reply_text(f"❌ Нужно {ANNOUNCEMENT_COST} 💎. Заработай /referral.")
         return
-
     text = " ".join(context.args)[:500]
     db.add_crystals(uid, -ANNOUNCEMENT_COST)
     db.add_announcement(uid, text)
@@ -2354,7 +2266,7 @@ async def announcement(update, context):
             sent += 1
         except Exception:
             pass
-    await update.message.reply_text(f"✅ Отправлено в {sent} чатов.\n-{ANNOUNCEMENT_COST} 💎")
+    await update.message.reply_text(f"✅ В {sent} чатов.\n-{ANNOUNCEMENT_COST} 💎")
 
 
 async def announcements_list(update, context):
@@ -2362,7 +2274,7 @@ async def announcements_list(update, context):
     if not items:
         await update.message.reply_text("Объявлений нет.")
         return
-    lines = [f"📢 ПОСЛЕДНИЕ ОБЪЯВЛЕНИЯ\n{divider()}"]
+    lines = [f"📢 ПОСЛЕДНИЕ\n{divider()}"]
     for uid, text, dt in items:
         lines.append(f"👤 ID {uid}: {text[:80]}")
     await update.message.reply_text("\n".join(lines))
@@ -2373,38 +2285,35 @@ async def announcements_list(update, context):
 async def admin_help(update, context):
     uid = update.effective_user.id
     uname = update.effective_user.username
-    logger.info(f"ADMIN CHECK: uid={uid}, uname=@{uname}, ADMIN_IDS={ADMIN_IDS}, is_admin={is_bot_admin(uid, uname)}")
-
+    logger.info(f"ADMIN CHECK: uid={uid}, uname=@{uname}, is_admin={is_bot_admin(uid, uname)}")
     if not is_bot_admin(uid, uname):
         await update.message.reply_text("❌ Доступ только для админов бота.")
         return
-
     text = (
         "👑 АДМИН-ПАНЕЛЬ 👑\n"
         f"{divider()}\n"
         "👤 ПОЛЬЗОВАТЕЛИ:\n"
-        "admin_user @юзер — инфо\n"
+        "admin_user @юзер\n"
         "admin_setbal @юзер сумма\n"
         "admin_addbal @юзер сумма\n"
-        "admin_takebal @юзер сумма — забрать монеты\n"
-        "admin_setcrystals @юзер сумма — выдать 💎\n"
-        "admin_takecrystals @юзер сумма — забрать 💎\n"
-        "admin_reset @юзер — сброс\n"
-        "admin_ban @юзер — бан в боте\n"
+        "admin_takebal @юзер сумма\n"
+        "admin_setcrystals @юзер сумма\n"
+        "admin_takecrystals @юзер сумма\n"
+        "admin_reset @юзер\n"
+        "admin_ban @юзер\n"
         "admin_unban @юзер\n"
-        "admin_freeze @юзер — заморозить\n"
-        "admin_unfreeze @юзер — разморозить\n"
+        "admin_freeze @юзер\n"
+        "admin_unfreeze @юзер\n"
         "admin_unmarry @юзер\n"
         "admin_setname @юзер имя\n"
         "admin_giveitem @юзер ID\n"
-        "admin_giveach @юзер ach_id — выдать ачивку\n"
+        "admin_giveach @юзер ach_id\n"
         "\n🌐 ЧАТЫ:\n"
-        "admin_chats — список\n"
-        "admin_broadcast текст — рассылка\n"
-        "admin_stats — статистика\n"
-        "\n⚙️ СИСТЕМА:\n"
-        "admin_ping\n"
-        "admin_version"
+        "admin_chats\n"
+        "admin_broadcast текст\n"
+        "admin_stats\n"
+        "\n⚙️:\n"
+        "admin_ping / admin_version"
     )
     await update.message.reply_text(text)
 
@@ -2428,7 +2337,6 @@ async def admin_stats(update, context):
 
 
 async def _resolve_admin_target(update, context):
-    """Возвращает user_data (dict) или None"""
     if update.message.reply_to_message:
         u = update.message.reply_to_message.from_user
         return db.get_user(u.id, u.username, u.first_name)
@@ -2440,13 +2348,12 @@ async def _resolve_admin_target(update, context):
                 return db.get_user(m.user.id, m.user.username, m.user.first_name)
             except Exception:
                 pass
-        # fallback — по username из БД
         with db.lock, db.sqlite3.connect(db.DB_PATH) as conn:
             cur = conn.cursor()
             cur.execute("SELECT * FROM users WHERE LOWER(username)=LOWER(?)", (name,))
             row = cur.fetchone()
             if row:
-                return db._row_to_dict(row)
+                return db._row(row)
     return None
 
 
@@ -2480,10 +2387,8 @@ async def admin_setbal(update, context):
     data = await _resolve_admin_target(update, context)
     if not data:
         return
-    # если reply — берём args[0]; если @ — args[1]
     idx = 0 if update.message.reply_to_message else 1
     if len(context.args) <= idx or not context.args[idx].lstrip("-").isdigit():
-        await update.message.reply_text("Укажи сумму.")
         return
     amount = int(context.args[idx])
     db.update_user(data["user_id"], balance=amount)
@@ -2619,7 +2524,7 @@ async def admin_unmarry(update, context):
         return
     db.update_user(data["user_id"], married_to=None, marriage_level=1, marriage_xp=0)
     db.update_user(data["married_to"], married_to=None, marriage_level=1, marriage_xp=0)
-    await update.message.reply_text(f"💔 Разведён(а).")
+    await update.message.reply_text("💔 Разведён(а).")
 
 
 async def admin_setname(update, context):
@@ -2667,7 +2572,7 @@ async def admin_giveach(update, context):
         return
     aid = context.args[idx]
     if aid not in ACHIEVEMENTS:
-        await update.message.reply_text("Нет такой ачивки.")
+        await update.message.reply_text("Нет такой.")
         return
     db.add_achievement(data["user_id"], aid)
     await update.message.reply_text(f"🏆 {ACHIEVEMENTS[aid][0]} → {data['first_name']}")
@@ -2718,30 +2623,19 @@ async def text_router(update, context):
     u = update.effective_user
     db.get_user(u.id, u.username, u.first_name)
     data = db.get_user(u.id)
-
-    # Бан/заморозка
     if data["is_banned"] or data["is_frozen"]:
         return
-
-    # Учёт сообщений
     try:
         db.add_message(u.id, update.effective_chat.id)
     except Exception:
         pass
-
-    # Ачивка за 1000 сообщений
     if (data["messages"] or 0) >= 1000:
         try:
             db.add_achievement(u.id, "chatterbox")
         except Exception:
             pass
-
-    # Обработка угадаек
     await handle_guess(update, context)
     await handle_quiz(update, context)
-
-    # Своя RP-команда (если текст начинается с /) — обрабатывается как команда, не сюда
-    # В группах: если текст начинается с /команда, и это своя RP — обработаем через command dispatcher ниже
 
 
 # ==================== ЗАПУСК ====================
@@ -2754,7 +2648,7 @@ def run_bot():
 
     async def post_init(app):
         try:
-            commands = [
+            await app.bot.set_my_commands([
                 BotCommand("start", "🚀 Старт"),
                 BotCommand("help", "📖 Команды"),
                 BotCommand("profile", "👤 Профиль"),
@@ -2775,8 +2669,7 @@ def run_bot():
                 BotCommand("marry", "💍 Брак"),
                 BotCommand("clans", "👑 Кланы"),
                 BotCommand("adminhelp", "👑 Админ"),
-            ]
-            await app.bot.set_my_commands(commands)
+            ])
         except Exception as e:
             logger.warning(f"set_my_commands: {e}")
 
@@ -2878,15 +2771,9 @@ def run_bot():
     application.add_handler(CommandHandler("love", love_calc))
     application.add_handler(CommandHandler("ship", ship))
 
-    # RP (англ)
+    # RP (латиница)
     for action_key in RP_ACTIONS.keys():
         application.add_handler(CommandHandler(action_key, make_rp_handler(action_key)))
-
-    # RP (русские алиасы)
-    for action_key, data in RP_ACTIONS.items():
-        ru = data[3]
-        if ru:
-            application.add_handler(CommandHandler(ru, make_rp_handler(action_key)))
 
     # Утилиты
     application.add_handler(CommandHandler("weather", weather))
@@ -2926,7 +2813,6 @@ def run_bot():
     application.add_handler(CommandHandler("clan_deposit", clan_deposit))
     application.add_handler(CommandHandler("clan_top", clan_top))
     application.add_handler(CommandHandler("clan_delete", clan_delete))
-    # кланы-алиасы
     application.add_handler(CommandHandler("clans_list", clans_list))
 
     # Заметки
@@ -2972,15 +2858,14 @@ def run_bot():
     # Новые участники
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, on_new_member))
 
-    # Текст (обычный роутер)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    # Русские RP без слэша (в группе 1, чтобы не конфликтовало с обычным router)
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, ru_rp_handler),
+        group=1
+    )
 
-    # Свои RP-команды (обработчик команд, которые НЕ зарегистрированы в PTB — динамически)
-    # PTB не умеет динамически создавать CommandHandler, поэтому ловим через regex-подобный приём:
-    # Мы НЕ можем поймать неизвестные команды как COMMAND. Но можем обработать через MessageHandler с фильтром 'text starts with /'.
-    # Поэтому ловим все команды в конце — но это может конфликтовать с PTB.
-    # Решение: просто не ловим динамически; пользователь вызывает свои RP через /my_rp (список), а применяет — через /команда, если добавит вручную в config.
-    # (Оставим проще: при вызове /<custom> PTB не найдёт хендлер, лог `unknown command`.) 
+    # Обычный текст
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
     async def error_handler(update, context):
         logger.error(f"EXCEPTION: {context.error}", exc_info=context.error)
