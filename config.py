@@ -1,6 +1,6 @@
 import os
 
-TOKEN = "8655220760:AAGTs6pnWRl9vQAG0IJhrfLDtmohZmXQotE"
+TOKEN = "8655220760:AAG7JCNScaSDI4DS8vyTUZMeKjdzxoxMP9Q"
 if not TOKEN:
     raise ValueError("Установите TELEGRAM_TOKEN в переменных окружения")
 
