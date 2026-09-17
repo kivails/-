@@ -32,7 +32,10 @@ def init_db():
             last_rob TEXT,
             last_fish TEXT,
             clan_id INTEGER,
-            reputation INTEGER DEFAULT 0
+            reputation INTEGER DEFAULT 0,
+            referral_coins REAL DEFAULT 0,
+            referred_by INTEGER,
+            referral_count INTEGER DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS chats (
             chat_id INTEGER PRIMARY KEY,
@@ -62,21 +65,17 @@ def init_db():
             created_at TEXT,
             balance INTEGER DEFAULT 0
         );
-        CREATE TABLE IF NOT EXISTS polls (
-            poll_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chat_id INTEGER,
-            question TEXT,
-            options TEXT,
-            votes TEXT DEFAULT '{}',
-            creator_id INTEGER,
-            created_at TEXT,
-            is_closed INTEGER DEFAULT 0
-        );
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
             amount INTEGER,
             reason TEXT,
+            created_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            referrer_id INTEGER,
+            referred_id INTEGER UNIQUE,
             created_at TEXT
         );
         """)
@@ -272,3 +271,37 @@ def add_achievement(user_id: int, ach_id: str) -> bool:
     cur.append(ach_id)
     update_user(user_id, achievements=",".join(cur))
     return True
+
+
+# ===== РЕФЕРАЛЫ =====
+def add_referral(referrer_id: int, referred_id: int) -> bool:
+    if referrer_id == referred_id:
+        return False
+    get_user(referrer_id)
+    get_user(referred_id)
+    with lock, sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM referrals WHERE referred_id=?", (referred_id,))
+        if cur.fetchone():
+            return False
+        cur.execute(
+            "INSERT INTO referrals(referrer_id, referred_id, created_at) VALUES(?, ?, ?)",
+            (referrer_id, referred_id, datetime.now().isoformat())
+        )
+        cur.execute(
+            "UPDATE users SET referral_coins = referral_coins + 0.5, referral_count = referral_count + 1 WHERE user_id=?",
+            (referrer_id,)
+        )
+        cur.execute("UPDATE users SET referred_by=? WHERE user_id=?", (referrer_id, referred_id))
+        conn.commit()
+    return True
+
+
+def get_referral_coins(user_id: int) -> float:
+    data = get_user(user_id)
+    return data[22] or 0.0
+
+
+def get_referral_count(user_id: int) -> int:
+    data = get_user(user_id)
+    return data[24] or 0
