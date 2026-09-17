@@ -1,6 +1,6 @@
 import sqlite3
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_PATH = "bot.db"
 lock = threading.Lock()
@@ -100,21 +100,23 @@ def init_db():
         conn.commit()
 
 
-def _row_to_dict(row):
+_KEYS = [
+    "user_id", "username", "first_name", "balance", "warns", "married_to",
+    "bio", "title", "inventory", "stats_played", "stats_won",
+    "daily_streak", "last_daily", "quest_progress", "registered",
+    "is_banned", "achievements", "last_work", "last_rob", "last_fish",
+    "clan_id", "reputation", "crystals", "referred_by", "referral_count",
+    "messages", "marriage_level", "marriage_xp", "last_message", "is_frozen"
+]
+
+
+def _row(row):
     if not row:
         return None
-    keys = [
-        "user_id", "username", "first_name", "balance", "warns", "married_to",
-        "bio", "title", "inventory", "stats_played", "stats_won",
-        "daily_streak", "last_daily", "quest_progress", "registered",
-        "is_banned", "achievements", "last_work", "last_rob", "last_fish",
-        "clan_id", "reputation", "crystals", "referred_by", "referral_count",
-        "messages", "marriage_level", "marriage_xp", "last_message", "is_frozen"
-    ]
-    return dict(zip(keys, row))
+    return dict(zip(_KEYS, row))
 
 
-def get_user(user_id: int, username: str = None, first_name: str = None) -> dict:
+def get_user(user_id, username=None, first_name=None):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
@@ -133,10 +135,10 @@ def get_user(user_id: int, username: str = None, first_name: str = None) -> dict
             if first_name and row[2] != first_name:
                 cur.execute("UPDATE users SET first_name=? WHERE user_id=?", (first_name, user_id))
             conn.commit()
-        return _row_to_dict(row)
+        return _row(row)
 
 
-def update_user(user_id: int, **kwargs):
+def update_user(user_id, **kwargs):
     if not kwargs:
         return
     fields = ", ".join(f"{k}=?" for k in kwargs)
@@ -147,11 +149,12 @@ def update_user(user_id: int, **kwargs):
         conn.commit()
 
 
-def get_balance(user_id: int) -> int:
-    return get_user(user_id)["balance"]
+def get_balance(user_id):
+    u = get_user(user_id)
+    return u["balance"] if u else 0
 
 
-def add_balance(user_id: int, amount: int):
+def add_balance(user_id, amount):
     get_user(user_id)
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -159,7 +162,7 @@ def add_balance(user_id: int, amount: int):
         conn.commit()
 
 
-def add_crystals(user_id: int, amount: float):
+def add_crystals(user_id, amount):
     get_user(user_id)
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
@@ -191,20 +194,18 @@ def top_wins(limit=3):
         return cur.fetchall()
 
 
-def top_messages(chat_id: int = None, limit=10, days: int = None):
+def top_messages(chat_id=None, limit=10, days=None):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         if chat_id and days:
-            from_date = (datetime.now() - __import__("datetime").timedelta(days=days)).isoformat()
+            from_date = (datetime.now() - timedelta(days=days)).isoformat()
             cur.execute("""SELECT cs.user_id, u.username, u.first_name, cs.messages
-                           FROM chat_stats cs
-                           LEFT JOIN users u ON cs.user_id=u.user_id
+                           FROM chat_stats cs LEFT JOIN users u ON cs.user_id=u.user_id
                            WHERE cs.chat_id=? AND cs.last_message>=?
                            ORDER BY cs.messages DESC LIMIT ?""", (chat_id, from_date, limit))
         elif chat_id:
             cur.execute("""SELECT cs.user_id, u.username, u.first_name, cs.messages
-                           FROM chat_stats cs
-                           LEFT JOIN users u ON cs.user_id=u.user_id
+                           FROM chat_stats cs LEFT JOIN users u ON cs.user_id=u.user_id
                            WHERE cs.chat_id=? ORDER BY cs.messages DESC LIMIT ?""", (chat_id, limit))
         else:
             cur.execute("""SELECT user_id, username, first_name, messages
@@ -212,7 +213,20 @@ def top_messages(chat_id: int = None, limit=10, days: int = None):
         return cur.fetchall()
 
 
-def get_chat(chat_id: int):
+def add_message(user_id, chat_id):
+    now = datetime.now().isoformat()
+    with lock, sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET messages = messages + 1, last_message=? WHERE user_id=?", (now, user_id))
+        cur.execute("""INSERT INTO chat_stats(chat_id, user_id, messages, last_message)
+                       VALUES(?, ?, 1, ?)
+                       ON CONFLICT(chat_id, user_id) DO UPDATE SET
+                       messages = messages + 1, last_message = ?""",
+                    (chat_id, user_id, now, now))
+        conn.commit()
+
+
+def get_chat(chat_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM chats WHERE chat_id=?", (chat_id,))
@@ -225,7 +239,7 @@ def get_chat(chat_id: int):
         return row
 
 
-def update_chat(chat_id: int, **kwargs):
+def update_chat(chat_id, **kwargs):
     get_chat(chat_id)
     fields = ", ".join(f"{k}=?" for k in kwargs)
     values = list(kwargs.values()) + [chat_id]
@@ -242,22 +256,8 @@ def get_all_chats():
         return [r[0] for r in cur.fetchall()]
 
 
-# ===== СООБЩЕНИЯ =====
-def add_message(user_id: int, chat_id: int):
-    now = datetime.now().isoformat()
-    with lock, sqlite3.connect(DB_PATH) as conn:
-        cur = conn.cursor()
-        cur.execute("UPDATE users SET messages = messages + 1, last_message=? WHERE user_id=?", (now, user_id))
-        cur.execute("""INSERT INTO chat_stats(chat_id, user_id, messages, last_message)
-                       VALUES(?, ?, 1, ?)
-                       ON CONFLICT(chat_id, user_id) DO UPDATE SET
-                       messages = messages + 1, last_message = ?""",
-                    (chat_id, user_id, now, now))
-        conn.commit()
-
-
 # ===== БРАК =====
-def create_marriage_proposal(proposer_id: int, target_id: int):
+def create_marriage_proposal(proposer_id, target_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""INSERT OR REPLACE INTO marriages_proposals(proposer_id, target_id, created_at)
@@ -265,7 +265,7 @@ def create_marriage_proposal(proposer_id: int, target_id: int):
         conn.commit()
 
 
-def get_marriage_proposal(proposer_id: int, target_id: int):
+def get_marriage_proposal(proposer_id, target_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""SELECT * FROM marriages_proposals
@@ -273,7 +273,7 @@ def get_marriage_proposal(proposer_id: int, target_id: int):
         return cur.fetchone()
 
 
-def delete_marriage_proposal(proposer_id: int, target_id: int):
+def delete_marriage_proposal(proposer_id, target_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""DELETE FROM marriages_proposals
@@ -281,10 +281,10 @@ def delete_marriage_proposal(proposer_id: int, target_id: int):
         conn.commit()
 
 
-def add_marriage_xp(user_id: int, amount: int):
-    user = get_user(user_id)
-    new_xp = (user["marriage_xp"] or 0) + amount
-    lvl = user["marriage_level"] or 1
+def add_marriage_xp(user_id, amount):
+    u = get_user(user_id)
+    new_xp = (u["marriage_xp"] or 0) + amount
+    lvl = u["marriage_level"] or 1
     while new_xp >= lvl * 100:
         new_xp -= lvl * 100
         lvl += 1
@@ -293,7 +293,7 @@ def add_marriage_xp(user_id: int, amount: int):
 
 
 # ===== КЛАНЫ =====
-def create_clan(name: str, owner_id: int, description: str = ""):
+def create_clan(name, owner_id, description=""):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         try:
@@ -305,14 +305,14 @@ def create_clan(name: str, owner_id: int, description: str = ""):
             return None
 
 
-def get_clan_by_name(name: str):
+def get_clan_by_name(name):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM clans WHERE LOWER(name)=LOWER(?)", (name,))
         return cur.fetchone()
 
 
-def get_clan(clan_id: int):
+def get_clan(clan_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM clans WHERE clan_id=?", (clan_id,))
@@ -326,7 +326,7 @@ def get_all_clans(limit=20):
         return cur.fetchall()
 
 
-def get_clan_members(clan_id: int):
+def get_clan_members(clan_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""SELECT user_id, username, first_name, balance
@@ -334,14 +334,14 @@ def get_clan_members(clan_id: int):
         return cur.fetchall()
 
 
-def add_clan_balance(clan_id: int, amount: int):
+def add_clan_balance(clan_id, amount):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("UPDATE clans SET balance = balance + ? WHERE clan_id=?", (amount, clan_id))
         conn.commit()
 
 
-def delete_clan(clan_id: int):
+def delete_clan(clan_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("UPDATE users SET clan_id=NULL WHERE clan_id=?", (clan_id,))
@@ -350,12 +350,12 @@ def delete_clan(clan_id: int):
 
 
 # ===== АЧИВКИ =====
-def get_achievements(user_id: int):
-    data = get_user(user_id)
-    return data["achievements"].split(",") if data["achievements"] else []
+def get_achievements(user_id):
+    u = get_user(user_id)
+    return (u["achievements"] or "").split(",") if u and u["achievements"] else []
 
 
-def add_achievement(user_id: int, ach_id: str) -> bool:
+def add_achievement(user_id, ach_id):
     cur = get_achievements(user_id)
     if ach_id in cur:
         return False
@@ -364,8 +364,8 @@ def add_achievement(user_id: int, ach_id: str) -> bool:
     return True
 
 
-# ===== РЕФЕРАЛЫ (КРИСТАЛЛЫ) =====
-def add_referral(referrer_id: int, referred_id: int) -> bool:
+# ===== РЕФЕРАЛЫ =====
+def add_referral(referrer_id, referred_id):
     if referrer_id == referred_id:
         return False
     get_user(referrer_id)
@@ -384,16 +384,18 @@ def add_referral(referrer_id: int, referred_id: int) -> bool:
     return True
 
 
-def get_crystals(user_id: int) -> float:
-    return get_user(user_id)["crystals"] or 0.0
+def get_crystals(user_id):
+    u = get_user(user_id)
+    return (u["crystals"] or 0.0) if u else 0.0
 
 
-def get_referral_count(user_id: int) -> int:
-    return get_user(user_id)["referral_count"] or 0
+def get_referral_count(user_id):
+    u = get_user(user_id)
+    return (u["referral_count"] or 0) if u else 0
 
 
 # ===== СВОИ RP =====
-def add_custom_rp(owner_id: int, command: str, emoji: str, action: str) -> bool:
+def add_custom_rp(owner_id, command, emoji, action):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         try:
@@ -405,14 +407,14 @@ def add_custom_rp(owner_id: int, command: str, emoji: str, action: str) -> bool:
             return False
 
 
-def get_custom_rp(command: str):
+def get_custom_rp(command):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM custom_rp WHERE command=?", (command.lower(),))
         return cur.fetchone()
 
 
-def get_my_custom_rp(owner_id: int):
+def get_my_custom_rp(owner_id):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT command, emoji, action FROM custom_rp WHERE owner_id=?", (owner_id,))
@@ -420,13 +422,12 @@ def get_my_custom_rp(owner_id: int):
 
 
 # ===== ОБЪЯВЛЕНИЯ =====
-def add_announcement(user_id: int, text: str):
+def add_announcement(user_id, text):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""INSERT INTO announcements(user_id, text, created_at)
                        VALUES(?, ?, ?)""", (user_id, text, datetime.now().isoformat()))
         conn.commit()
-        return cur.lastrowid
 
 
 def get_last_announcements(limit=5):
