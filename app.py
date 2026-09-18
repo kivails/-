@@ -3192,9 +3192,7 @@ def run_bot():
     application.add_handler(CommandHandler("ship", ship))
 
     # ===== БИЗНЕС / ВКЛАД =====
-    application.add_handler(CommandHandler("бизнес", biz))
     application.add_handler(CommandHandler("biz", biz))
-    application.add_handler(CommandHandler("вклад", deposit_cmd))
     application.add_handler(CommandHandler("deposit", deposit_cmd))
     application.add_handler(CommandHandler("deposit_collect", deposit_collect))
     application.add_handler(CommandHandler("convert", convert))
