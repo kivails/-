@@ -9,7 +9,9 @@ ADMIN_IDS = [5024935475]
 ADMIN_USERNAMES = ["kvails", "notuwife"]
 
 # ========== ОБЯЗАТЕЛЬНАЯ ПОДПИСКА ==========
-REQUIRED_CHANNELS = [@apelsinki]   # [{"id": -1001234, "title": "Канал", "url": "https://t.me/..."}]
+REQUIRED_CHANNELS = [
+    {"id": "@apelsinki", "title": "Apelsinki", "url": "https://t.me/apelsinki"}
+]
 
 # ========== ВАЛЮТЫ ==========
 START_BALANCE = 100
