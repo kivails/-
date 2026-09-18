@@ -184,6 +184,8 @@ def top_crystals(limit=3):
         cur.execute("""SELECT user_id, username, first_name, crystals
                        FROM users ORDER BY crystals DESC LIMIT ?"""), (limitimport sqlite3)
 import threading
+from datetime import datetime, timedeltaimport sqlite3
+import threading
 from datetime import datetime, timedelta
 
 DB_PATH = "bot.db"
@@ -765,15 +767,15 @@ def use_promo(code, user_id):
         cur.execute("SELECT reward, activations, max_activations, expires_at FROM promos WHERE code=?", (code,))
         row = cur.fetchone()
         if not row:
-            return None, "Промокод не найден"
+            return None, "Не найден"
         reward, acts, max_acts, expires = row
         if datetime.fromisoformat(expires) < datetime.now():
-            return None, "Промокод истёк"
+            return None, "Истёк"
         if acts >= max_acts:
-            return None, "Лимит активаций исчерпан"
+            return None, "Лимит исчерпан"
         cur.execute("SELECT 1 FROM promo_uses WHERE code=? AND user_id=?", (code, user_id))
         if cur.fetchone():
-            return None, "Ты уже активировал этот промокод"
+            return None, "Уже активировал"
         cur.execute("INSERT INTO promo_uses(code, user_id, used_at) VALUES(?, ?, ?)",
                     (code, user_id, datetime.now().isoformat()))
         cur.execute("UPDATE promos SET activations = activations + 1 WHERE code=?", (code,))
