@@ -1,6 +1,6 @@
 import os
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TOKEN = "8655220760:AAG7JCNScaSDI4DS8vyTUZMeKjdzxoxMP9Q"
 if not TOKEN:
     raise ValueError("TELEGRAM_TOKEN не задан")
 
