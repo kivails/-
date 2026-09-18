@@ -182,7 +182,7 @@ def top_crystals(limit=3):
     with lock, sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""SELECT user_id, username, first_name, crystals
-                       FROM users ORDER BY crystals DESC LIMIT ?""", (limitimport sqlite3
+                       FROM users ORDER BY crystals DESC LIMIT ?"""), (limitimport sqlite3)
 import threading
 from datetime import datetime, timedelta
 
